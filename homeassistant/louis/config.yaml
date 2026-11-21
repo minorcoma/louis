@@ -30,15 +30,10 @@ options:
 schema:
   yoto_client_id: str
   youtube_api_key: password
-  youtube_safe_search:
-    name: YouTube search content filtering
-    description: Applies to typed search when youtube_api_key is set (none, moderate, strict).
-    optional: true
-    default: moderate
-    select:
-      none: None
-      moderate: Moderate
-      strict: Strict
+  # Type strings only. A nested name/select map is read as more options, and
+  # Supervisor then refuses the whole repository (none of the app shows up).
+  # Labels live in translations/en.yaml. Default is options.youtube_safe_search.
+  youtube_safe_search: list(none|moderate|strict)?
   yoto_redirect_uri: str
   cookie_secure: bool
   ytdlp_cookies_file: str?

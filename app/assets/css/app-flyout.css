@@ -183,10 +183,15 @@
     padding: max(0.35rem, env(safe-area-inset-top)) max(0.35rem, env(safe-area-inset-right))
       max(0.35rem, env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
     align-items: stretch;
+    justify-items: stretch;
+    /* The implicit auto column sized itself to the nowrap title, so a long
+       track name grew the Track Art panel past the viewport and hid Apply. */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .app-flyout--full .app-flyout__panel {
     width: 100%;
+    min-width: 0;
     max-width: none;
     height: 100%;
     max-height: none;

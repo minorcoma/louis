@@ -6,7 +6,8 @@ import {
   uiSoundGain,
   uiSoundPath,
   uiSoundVariants,
-} from './uiSoundCatalog'
+} from './uiSoundCatalog.ts'
+import { rewindLoadedAudio } from '../../shared/rewindLoadedAudio.ts'
 
 const POOL_SIZE = 3
 /** Extra overlapping one-shots (pixel paint/erase) before we steal a busy voice. */
@@ -63,7 +64,7 @@ class UiSoundPlayer {
 
   /**
    * Attempt to satisfy the browser autoplay gesture requirement.
-   * Call from a pointer/key handler. Returns whether playback is allowed.
+   * Call from a click or key handler. Returns whether playback is allowed.
    */
   async unlock(id?: UiSoundId): Promise<boolean> {
     if (this.unlocked) return true
@@ -79,12 +80,14 @@ class UiSoundPlayer {
     audio.volume = 0
     try {
       await audio.play()
-      audio.pause()
-      audio.currentTime = 0
       this.unlocked = true
+      audio.pause()
+      rewindLoadedAudio(audio)
       return true
     }
     catch {
+      // play() never started, so ended/pause will not drop the pool claim.
+      if (id) this.inFlight.delete(audio)
       return false
     }
     finally {
@@ -116,18 +119,20 @@ class UiSoundPlayer {
     if (exclusive) this.exclusiveBusy.add(exclusive)
 
     const audio = this.borrowAudio(id)
-    audio.loop = false
-    audio.muted = false
-    audio.currentTime = 0
-    audio.volume = this.effectiveVolume(id, options?.gain)
-
     const releaseExclusive = () => {
       if (exclusive) this.exclusiveBusy.delete(exclusive)
     }
-    audio.addEventListener('ended', releaseExclusive, { once: true })
-    audio.addEventListener('pause', releaseExclusive, { once: true })
 
     try {
+      audio.loop = false
+      audio.muted = false
+      // Seek only after metadata exists. WebKit throws InvalidStateError
+      // before that, and the throw used to land outside this try — the voice
+      // stayed claimed and every later tap on iOS was silent.
+      rewindLoadedAudio(audio)
+      audio.volume = this.effectiveVolume(id, options?.gain)
+      audio.addEventListener('ended', releaseExclusive, { once: true })
+      audio.addEventListener('pause', releaseExclusive, { once: true })
       await audio.play()
       this.unlocked = true
       return true
@@ -165,14 +170,14 @@ class UiSoundPlayer {
     const audio = this.loops.get(id)
     if (!audio) return
     audio.pause()
-    audio.currentTime = 0
+    rewindLoadedAudio(audio)
     this.loops.delete(id)
   }
 
   stopAll(): void {
     for (const audio of this.loops.values()) {
       audio.pause()
-      audio.currentTime = 0
+      rewindLoadedAudio(audio)
     }
     this.loops.clear()
     this.exclusiveBusy.clear()
@@ -180,7 +185,7 @@ class UiSoundPlayer {
     for (const elements of this.pools.values()) {
       for (const audio of elements) {
         audio.pause()
-        audio.currentTime = 0
+        rewindLoadedAudio(audio)
       }
     }
   }
@@ -192,6 +197,7 @@ class UiSoundPlayer {
   private createAudio(id: UiSoundId): HTMLAudioElement {
     const audio = new Audio(uiSoundPath(id))
     audio.preload = 'auto'
+    audio.playsInline = true
     return audio
   }
 

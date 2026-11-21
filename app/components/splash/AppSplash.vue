@@ -252,7 +252,9 @@ onMounted(() => {
   }
 
   window.addEventListener('keydown', onKeydown)
-  window.addEventListener('pointerdown', onPointerDown, { capture: true })
+  // click, not pointerdown: WebKit on iOS does not treat pointerdown as a
+  // user activation, so the splash cue and the unlock that follows it stay silent.
+  window.addEventListener('click', onPointerDown, { capture: true })
 
   if (!stageEl.value) {
     if (!props.debug) finish()
@@ -288,7 +290,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
-  window.removeEventListener('pointerdown', onPointerDown, { capture: true })
+  window.removeEventListener('click', onPointerDown, { capture: true })
   clearFadeTimer()
   clearStartDelay()
   destroyAnim()

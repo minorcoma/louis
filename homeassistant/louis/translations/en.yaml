@@ -1,0 +1,40 @@
+---
+configuration:
+  yoto_client_id:
+    name: Yoto client ID
+    description: >-
+      Public Yoto PKCE client ID. Leave the default unless you created
+      your own app at yoto.dev.
+  youtube_api_key:
+    name: YouTube API key
+    description: >-
+      YouTube Data API v3 key for faster typed search. Leave empty to
+      search with the bundled yt-dlp.
+  youtube_safe_search:
+    name: YouTube search content filtering
+    description: >-
+      Applies to typed search when a YouTube API key is set.
+      none, moderate, or strict.
+  yoto_redirect_uri:
+    name: Yoto redirect URI
+    description: >-
+      OAuth callback URL. Keep the default with the bundled client.
+      Change it only together with your own yoto.dev client ID.
+  cookie_secure:
+    name: Secure cookies
+    description: >-
+      Turn on when Louis is served only over HTTPS. Leave off for
+      plain HTTP on your LAN.
+  ytdlp_cookies_file:
+    name: yt-dlp cookies file
+    description: >-
+      Optional path inside the container to a Netscape cookies.txt,
+      used only if YouTube blocks an anonymous download.
+  audio_cache_max_age_ms:
+    name: Audio cache max age
+    description: How long cached audio is kept, in milliseconds.
+  audio_cache_max_bytes:
+    name: Audio cache max size
+    description: Combined preview and save cache cap, in bytes.
+network:
+  4000/tcp: Louis web UI (also the Yoto OAuth redirect target)

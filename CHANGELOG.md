@@ -9,6 +9,11 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 
 ## [Unreleased]
 
+### Fixed
+- Home Assistant no longer drops the Louis repository. `youtube_safe_search` was a nested `name` / `select` map, which Supervisor reads as more options and then rejects, so the app never appeared in the store. The option is now `list(none|moderate|strict)`, with the label in `translations/en.yaml`.
+- Track Art stays on screen on a phone when the track title is long. The full-size flyout's grid column was growing to the nowrap title, which pushed the panel past the viewport and left Apply unreachable.
+- UI taps are silent on iOS when a clip is not loaded yet. Setting `currentTime` before the browser has metadata throws outside the `play()` catch on WebKit, which stuck that voice in the pool. Splash unlock also listens for `click`, which iOS counts as a user gesture (`pointerdown` does not).
+
 ### Changed
 - Portainer stack uses host networking so yt-dlp reaches YouTube over the host's IPv6. On Docker's default bridge the container was IPv4-only and went out through the household's shared NAT address, which YouTube blocked with "Sign in to confirm you're not a bot" even when the same network worked from a laptop. Louis now listens directly on host port 4000 (`LOUIS_PORT` to change). See [docs/HOSTING.md](docs/HOSTING.md#why-the-stack-uses-host-networking).
 - Portainer stack sets `pull_policy: always`, so redeploys fetch the current image instead of reusing a stale cached `latest` with an old yt-dlp.
