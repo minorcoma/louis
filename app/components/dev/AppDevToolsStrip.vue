@@ -1,0 +1,220 @@
+<script setup lang="ts">
+import { YOTO_MYO_KEY } from '~/components/yoto-myo/keys'
+import { useUserPreferences } from '~/composables/useUserPreferences'
+import { useDesktopHost } from '~/composables/useDesktopHost'
+import {
+  normalizeAppUpdateSimulationMode,
+  type AppUpdateSimulationMode,
+} from '#shared/appUpdate'
+
+const APP_UPDATE_SIMULATION_MODES = [
+  'available',
+  'current',
+  'checking',
+  'error',
+  'unsupported',
+] as const satisfies readonly AppUpdateSimulationMode[]
+
+const route = useRoute()
+const yoto = inject(YOTO_MYO_KEY, null)
+const { showDebugPanel } = useUserPreferences()
+const { desktopPrefsDebug } = useDesktopHost()
+
+function hrefWithQuery(patch: Record<string, string | undefined>) {
+  const query = { ...route.query }
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) delete query[key]
+    else query[key] = value
+  }
+  return { path: route.path, query }
+}
+
+const testSaveProgressActive = computed(
+  () => route.query.testSaveProgress !== undefined,
+)
+
+const testSaveProgressHref = computed(() => hrefWithQuery({
+  testSaveProgress: testSaveProgressActive.value ? undefined : '',
+}))
+
+function queryFlag(key: string) {
+  return computed(() => route.query[key] !== undefined)
+}
+
+function queryFlagHref(key: string, active: { value: boolean }) {
+  return computed(() => hrefWithQuery({
+    [key]: active.value ? undefined : '',
+  }))
+}
+
+const testUncertainCreateActive = queryFlag('testUncertainCreate')
+const testUncertainCreateHref = queryFlagHref('testUncertainCreate', testUncertainCreateActive)
+const testCreatePromptsActive = queryFlag('testCreatePrompts')
+const testCreatePromptsHref = queryFlagHref('testCreatePrompts', testCreatePromptsActive)
+const testPlaylistBannerActive = queryFlag('testPlaylistBanner')
+const testPlaylistBannerHref = queryFlagHref('testPlaylistBanner', testPlaylistBannerActive)
+const testOverflowToastActive = queryFlag('testOverflowToast')
+const testOverflowToastHref = queryFlagHref('testOverflowToast', testOverflowToastActive)
+
+const desktopPrefsHref = computed(() => hrefWithQuery({
+  desktopPrefs: desktopPrefsDebug.value ? '0' : '1',
+}))
+
+const desktopSetupHref = computed(() => hrefWithQuery({
+  desktopPrefs: '1',
+  desktopSetup: '1',
+}))
+
+const splashDebugActive = computed(() => {
+  const value = route.query.splash
+  const raw = Array.isArray(value) ? value[0] : value
+  return raw === 'debug'
+})
+
+const splashDebugHref = computed(() => hrefWithQuery({
+  splash: splashDebugActive.value ? undefined : 'debug',
+}))
+
+const appUpdateSimulation = computed(() =>
+  normalizeAppUpdateSimulationMode(route.query.appUpdate),
+)
+
+function appUpdateSimulationHref(mode: AppUpdateSimulationMode) {
+  const active = appUpdateSimulation.value === mode
+  return hrefWithQuery({
+    appUpdate: active ? undefined : mode,
+    ...(active ? {} : { desktopPrefs: '1' }),
+  })
+}
+
+type HealthChecks = {
+  audioCache?: {
+    cachePreviewBytes: number
+    cacheSaveBytes: number
+    cacheFileCount: number
+    staleJobDirCount: number
+  }
+}
+
+const cacheStatsLabel = ref('')
+let healthFetched = false
+
+async function fetchHealthIfNeeded() {
+  if (!showDebugPanel.value || healthFetched) return
+  healthFetched = true
+
+  try {
+    const health = await $fetch<{ checks: HealthChecks }>('/api/health')
+    const cache = health.checks?.audioCache
+    if (!cache) return
+
+    const totalMb = Math.round((cache.cachePreviewBytes + cache.cacheSaveBytes) / (1024 * 1024))
+    cacheStatsLabel.value = `Audio cache: ${cache.cacheFileCount} files, ${totalMb} MB, ${cache.staleJobDirCount} stale jobs`
+  }
+  catch {
+    cacheStatsLabel.value = 'Audio cache: unavailable'
+  }
+}
+
+watch(showDebugPanel, (visible) => {
+  if (visible) void fetchHealthIfNeeded()
+}, { immediate: true })
+
+onMounted(() => {
+  void fetchHealthIfNeeded()
+})
+
+function onRefreshCards() {
+  yoto?.refresh()
+}
+</script>
+
+<template>
+  <details
+    v-if="showDebugPanel"
+    class="dev-tools-strip border-maru rounded-maru bg-maru-gray-light px-3 py-1.5 sm:px-4"
+  >
+    <summary class="dev-tools-strip__text text-maru-gray cursor-pointer select-none">
+      Debug
+    </summary>
+    <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+      <NuxtLink
+        :to="testSaveProgressHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ testSaveProgressActive ? 'Disable' : 'Enable' }} ?testSaveProgress
+      </NuxtLink>
+      <NuxtLink
+        :to="testUncertainCreateHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ testUncertainCreateActive ? 'Disable' : 'Enable' }} ?testUncertainCreate
+      </NuxtLink>
+      <NuxtLink
+        :to="testCreatePromptsHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ testCreatePromptsActive ? 'Disable' : 'Enable' }} ?testCreatePrompts
+      </NuxtLink>
+      <NuxtLink
+        :to="testPlaylistBannerHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ testPlaylistBannerActive ? 'Disable' : 'Enable' }} ?testPlaylistBanner
+      </NuxtLink>
+      <NuxtLink
+        :to="testOverflowToastHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ testOverflowToastActive ? 'Disable' : 'Enable' }} ?testOverflowToast
+      </NuxtLink>
+      <NuxtLink
+        :to="splashDebugHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ splashDebugActive ? 'Disable' : 'Enable' }} ?splash=debug
+      </NuxtLink>
+      <NuxtLink
+        :to="desktopPrefsHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ desktopPrefsDebug ? 'Disable' : 'Enable' }} ?desktopPrefs=1
+      </NuxtLink>
+      <NuxtLink
+        :to="desktopSetupHref"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        Enable ?desktopSetup=1
+      </NuxtLink>
+      <NuxtLink
+        v-for="mode in APP_UPDATE_SIMULATION_MODES"
+        :key="mode"
+        :to="appUpdateSimulationHref(mode)"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+      >
+        {{ appUpdateSimulation === mode ? 'Disable' : 'Enable' }} ?appUpdate={{ mode }}
+      </NuxtLink>
+      <button
+        type="button"
+        class="dev-tools-strip__text font-maru-mono text-maru-black underline"
+        @click="onRefreshCards"
+      >
+        Refresh playlists
+      </button>
+      <span
+        v-if="cacheStatsLabel"
+        class="dev-tools-strip__text text-maru-gray"
+      >
+        {{ cacheStatsLabel }}
+      </span>
+    </div>
+  </details>
+</template>
+
+<style scoped>
+.dev-tools-strip__text {
+  font-size: var(--text-maru-meta);
+  line-height: var(--text-maru-meta--line-height);
+  letter-spacing: 0.01em;
+}
+</style>

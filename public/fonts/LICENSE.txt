@@ -1,0 +1,2 @@
+LT Saeada is licensed under the SIL Open Font License, Version 1.1.
+See `saeada/OFL.txt` for the full license text.

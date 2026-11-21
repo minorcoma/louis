@@ -1,0 +1,979 @@
+/* ─── Settings flyout content ─── */
+
+.prefs-projector__layout-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  padding: 1rem 1.25rem;
+}
+
+.prefs-projector__layout-wrap .prefs-projector__layout {
+  height: 100%;
+}
+
+.prefs-projector__layout {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.prefs-projector__nav {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+  width: 8.75rem;
+  padding-right: 0.75rem;
+  border-right: 1px solid color-mix(in srgb, var(--color-maru-black) 18%, transparent);
+}
+
+.prefs-projector__nav-item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.55rem;
+  border: 3px solid transparent;
+  border-radius: var(--radius-maru);
+  background: transparent;
+  font-family: var(--font-maru);
+  font-size: var(--text-maru-label);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: left;
+  color: var(--color-maru-black);
+  cursor: pointer;
+  transition:
+    background-color 0.18s cubic-bezier(0.2, 0, 0, 1),
+    border-color 0.18s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.15s ease-out,
+    translate 0.15s ease-out;
+}
+
+.prefs-projector__nav-item:hover:not(:disabled):not(.prefs-projector__nav-item--active) {
+  border-color: var(--color-maru-black);
+  background: var(--color-maru-white);
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.prefs-projector__nav-item--active {
+  border-color: var(--color-maru-black);
+  background: var(--color-maru-yellow);
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+}
+
+.prefs-projector__nav-item--active:hover:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.prefs-projector__nav-item:focus-visible {
+  outline: 3px solid var(--color-maru-blue);
+  outline-offset: 2px;
+}
+
+.prefs-projector__nav-item:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+  background: var(--color-maru-gray-light);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.prefs-projector__pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prefs-projector__pane-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+  padding-bottom: 0.25rem;
+}
+
+@media (max-width: 599px) {
+  .prefs-projector__layout {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .prefs-projector__nav {
+    flex-direction: row;
+    width: 100%;
+    padding-right: 0;
+    padding-bottom: 0.65rem;
+    border-right: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-maru-black) 18%, transparent);
+  }
+
+  .prefs-projector__nav-item {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0.45rem 0.4rem;
+    font-size: var(--text-maru-meta);
+  }
+}
+
+.prefs-projector__field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.prefs-projector__field--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.prefs-projector__field--switch {
+  justify-content: space-between;
+  width: 100%;
+  cursor: default;
+}
+
+.prefs-projector__label {
+  font-family: var(--font-maru);
+  font-size: var(--text-maru-label);
+  line-height: var(--text-maru-label--line-height);
+  letter-spacing: 0.01em;
+  font-weight: 700;
+  color: var(--color-maru-black);
+}
+
+.prefs-projector__field:has(.prefs-projector__select:disabled) > .prefs-projector__label-row .prefs-projector__label,
+.prefs-projector__field:has(.prefs-projector__select:disabled) > .prefs-projector__label,
+.prefs-projector__field:has(.prefs-projector__input:disabled:not([readonly])) > .prefs-projector__label-row .prefs-projector__label,
+.prefs-projector__field:has(.prefs-projector__input:disabled:not([readonly])) > .prefs-projector__label,
+.prefs-projector__field:has(.maru-legal-pad__sheet:disabled) > .prefs-projector__label-row .prefs-projector__label,
+.prefs-projector__field:has(.maru-legal-pad__sheet:disabled) > .prefs-projector__label,
+.prefs-projector__field--switch:has(.maru-switch:disabled) .prefs-projector__label,
+.prefs-projector__field:has(.maru-checkbox__input:disabled) .prefs-projector__label {
+  color: color-mix(in srgb, var(--color-maru-black) 48%, var(--color-maru-gray));
+}
+
+.prefs-projector__label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.prefs-projector__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--color-maru-black);
+  border-radius: 999px;
+  background: var(--color-maru-white);
+  box-shadow: 1.5px 1.5px 0 var(--color-maru-black);
+  font-family: var(--font-maru);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-maru-black);
+  cursor: help;
+  transition:
+    box-shadow 0.15s ease-out,
+    translate 0.15s ease-out,
+    background-color 0.15s ease-out;
+}
+
+.prefs-projector__help:hover:not(:disabled) {
+  background: var(--color-maru-yellow);
+  box-shadow: 2.5px 2.5px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.prefs-projector__help:focus-visible {
+  outline: 3px solid var(--color-maru-blue);
+  outline-offset: 2px;
+}
+
+.prefs-projector__help:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+.prefs-projector__warn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.3rem;
+  height: 1.5rem;
+  margin: 0;
+  padding: 0;
+  padding-top: 0.12rem;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-maru);
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-maru-black);
+  cursor: help;
+  transition: translate 0.15s ease-out;
+}
+
+.prefs-projector__warn-icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.prefs-projector__warn-shadow {
+  fill: var(--color-maru-black);
+  stroke: var(--color-maru-black);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  transform: translate(1.5px, 1.5px);
+  transition: transform 0.15s ease-out;
+}
+
+.prefs-projector__warn-face {
+  fill: var(--color-maru-yellow);
+  stroke: var(--color-maru-black);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  transition: fill 0.15s ease-out;
+}
+
+.prefs-projector__warn-mark {
+  position: relative;
+  z-index: 1;
+  display: block;
+  line-height: 1;
+}
+
+.prefs-projector__warn:hover:not(:disabled) {
+  translate: -1px -1px;
+}
+
+.prefs-projector__warn:hover:not(:disabled) .prefs-projector__warn-shadow {
+  transform: translate(2.5px, 2.5px);
+}
+
+.prefs-projector__warn:hover:not(:disabled) .prefs-projector__warn-face {
+  fill: var(--color-maru-yellow-light);
+}
+
+.prefs-projector__warn:focus-visible {
+  outline: 3px solid var(--color-maru-blue);
+  outline-offset: 2px;
+}
+
+.prefs-projector__warn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.35);
+}
+
+@media (max-width: 599px) {
+  .prefs-projector__label {
+    font-size: var(--text-maru-body);
+    line-height: var(--text-maru-body--line-height);
+  }
+}
+
+/* Chunky Maru switch */
+.maru-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 5.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 3px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background: var(--color-maru-gray-light);
+  box-shadow: 4px 4px 0 var(--color-maru-black);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    background-color 0.2s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.15s ease-out,
+    scale 0.15s ease-out;
+}
+
+.maru-switch--on {
+  background: var(--color-maru-green-light);
+}
+
+.maru-switch--off {
+  background: var(--color-maru-gray-light);
+}
+
+.maru-switch:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.maru-switch:active:not(:disabled) {
+  scale: 0.97;
+  box-shadow: 2px 2px 0 var(--color-maru-black);
+  translate: 1px 1px;
+}
+
+.maru-switch:disabled {
+  cursor: not-allowed;
+  background: var(--color-maru-gray-light);
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.maru-switch--on:disabled {
+  background: color-mix(in srgb, var(--color-maru-green-light) 35%, var(--color-maru-gray-light));
+}
+
+.maru-switch:disabled .maru-switch__label {
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+}
+
+.maru-switch:disabled .maru-switch__thumb {
+  background: color-mix(in srgb, var(--color-maru-white) 65%, var(--color-maru-gray-light));
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+}
+
+.maru-switch--on:disabled .maru-switch__thumb {
+  background: color-mix(in srgb, var(--color-maru-yellow) 42%, var(--color-maru-gray-light));
+}
+
+.maru-switch__track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.55rem 0 0.65rem;
+  pointer-events: none;
+}
+
+.maru-switch__label {
+  font-family: var(--font-maru);
+  font-size: var(--text-maru-meta);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-maru-black);
+  /* Optical: ink sits high in the em box */
+  translate: 0 0.12em;
+  transition: opacity 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.maru-switch--on .maru-switch__label--on,
+.maru-switch--off .maru-switch__label--off {
+  opacity: 1;
+}
+
+.maru-switch--on .maru-switch__label--off,
+.maru-switch--off .maru-switch__label--on {
+  /* Fully hide — Saeada metrics let a 0.28 ghost peek past the thumb */
+  opacity: 0;
+}
+
+.maru-switch__thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  z-index: 1;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 3px solid var(--color-maru-black);
+  border-radius: calc(var(--radius-maru) - 2px);
+  background: var(--color-maru-white);
+  box-shadow:
+    2px 2px 0 var(--color-maru-black),
+    inset 0 -2px 0 color-mix(in srgb, var(--color-maru-black) 12%, transparent);
+  transition: translate 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  pointer-events: none;
+}
+
+.maru-switch--on .maru-switch__thumb {
+  translate: 2.7rem 0;
+  background: var(--color-maru-yellow);
+}
+
+.maru-switch--off .maru-switch__thumb {
+  translate: 0 0;
+  background: var(--color-maru-white);
+}
+
+.prefs-projector__checkbox {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-maru-blue);
+  cursor: pointer;
+}
+
+.maru-checkbox {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.maru-checkbox__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.maru-checkbox__input:disabled {
+  cursor: not-allowed;
+}
+
+.maru-checkbox__input:disabled + .maru-checkbox__box {
+  cursor: not-allowed;
+  background: var(--color-maru-gray-light);
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.maru-checkbox__input:disabled:checked + .maru-checkbox__box {
+  background: color-mix(in srgb, var(--color-maru-yellow) 42%, var(--color-maru-gray-light));
+}
+
+.maru-checkbox__input:disabled + .maru-checkbox__box .maru-checkbox__mark {
+  border-color: color-mix(in srgb, var(--color-maru-black) 32%, transparent);
+  opacity: 0.35;
+  scale: 1;
+  filter: blur(0);
+}
+
+.maru-checkbox__box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 3px solid var(--color-maru-black);
+  border-radius: calc(var(--radius-maru) - 1px);
+  background: var(--color-maru-white);
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  transition:
+    background-color 0.18s cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 0.15s ease-out,
+    translate 0.15s ease-out,
+    scale 0.15s ease-out;
+}
+
+.maru-checkbox__mark {
+  width: 0.55rem;
+  height: 0.95rem;
+  margin-top: -0.15rem;
+  border-right: 3px solid var(--color-maru-black);
+  border-bottom: 3px solid var(--color-maru-black);
+  opacity: 0;
+  scale: 0.25;
+  rotate: 40deg;
+  filter: blur(4px);
+  transition:
+    opacity 0.2s cubic-bezier(0.2, 0, 0, 1),
+    scale 0.2s cubic-bezier(0.2, 0, 0, 1),
+    filter 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.maru-checkbox__input:checked + .maru-checkbox__box {
+  background: var(--color-maru-yellow);
+}
+
+.maru-checkbox__input:checked + .maru-checkbox__box .maru-checkbox__mark {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+}
+
+/* Ghost the check so an empty box reads as a checkbox before it's ticked. */
+.maru-checkbox__input:focus-visible:not(:checked):not(:disabled) + .maru-checkbox__box .maru-checkbox__mark {
+  opacity: 0.3;
+  scale: 1;
+  filter: blur(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .maru-checkbox__input:hover:not(:checked):not(:disabled) + .maru-checkbox__box .maru-checkbox__mark {
+    opacity: 0.3;
+    scale: 1;
+    filter: blur(0);
+  }
+}
+
+.maru-checkbox__input:hover:not(:disabled) + .maru-checkbox__box {
+  box-shadow: 4px 4px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.maru-checkbox__input:active:not(:disabled) + .maru-checkbox__box {
+  scale: 0.94;
+  box-shadow: 1px 1px 0 var(--color-maru-black);
+  translate: 1px 1px;
+}
+
+.maru-checkbox__input:focus-visible + .maru-checkbox__box {
+  outline: 3px solid var(--color-maru-blue);
+  outline-offset: 2px;
+}
+
+.maru-legal-pad {
+  position: relative;
+  width: 100%;
+  border: 3px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background: var(--color-maru-yellow-light);
+  box-shadow: 4px 4px 0 var(--color-maru-black);
+  overflow: hidden;
+}
+
+.maru-legal-pad__head {
+  height: 0.85rem;
+  border-bottom: 3px solid var(--color-maru-black);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--color-maru-black) 0 0.35rem,
+      transparent 0.35rem 0.85rem
+    ),
+    var(--color-maru-yellow);
+  background-size: 0.85rem 100%, auto;
+  background-position: 0.55rem center, 0 0;
+  background-repeat: repeat-x, no-repeat;
+}
+
+.maru-legal-pad__sheet {
+  display: block;
+  width: 100%;
+  min-height: 8.5rem;
+  margin: 0;
+  padding: 0.15rem 0.85rem 0.75rem 1.85rem;
+  border: none;
+  border-radius: 0;
+  outline: none;
+  resize: vertical;
+  background-color: var(--color-maru-yellow-light);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 1.35rem,
+      var(--color-maru-red-light) 1.35rem,
+      var(--color-maru-red-light) calc(1.35rem + 3px),
+      transparent calc(1.35rem + 3px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(1.7rem - 1px),
+      color-mix(in srgb, var(--color-maru-blue) 35%, transparent) calc(1.7rem - 1px),
+      color-mix(in srgb, var(--color-maru-blue) 35%, transparent) 1.7rem
+    );
+  background-attachment: local;
+  font-size: var(--text-maru-body);
+  line-height: 1.7rem;
+  color: var(--color-maru-black);
+  caret-color: var(--color-maru-blue);
+}
+
+.maru-legal-pad__sheet::placeholder {
+  color: color-mix(in srgb, var(--color-maru-black) 35%, transparent);
+}
+
+.maru-legal-pad:has(.maru-legal-pad__sheet:disabled) {
+  background: var(--color-maru-gray-light);
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+}
+
+.maru-legal-pad:has(.maru-legal-pad__sheet:disabled) .maru-legal-pad__head {
+  opacity: 0.55;
+  filter: grayscale(0.25);
+}
+
+.maru-legal-pad__sheet:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+  background-color: transparent;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 1.35rem,
+      color-mix(in srgb, var(--color-maru-black) 16%, transparent) 1.35rem,
+      color-mix(in srgb, var(--color-maru-black) 16%, transparent) calc(1.35rem + 2px),
+      transparent calc(1.35rem + 2px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(1.7rem - 1px),
+      color-mix(in srgb, var(--color-maru-black) 10%, transparent) calc(1.7rem - 1px),
+      color-mix(in srgb, var(--color-maru-black) 10%, transparent) 1.7rem
+    );
+  opacity: 1;
+}
+
+.maru-legal-pad__sheet:focus-visible {
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--color-maru-blue) 45%, transparent);
+}
+
+.prefs-projector__done:disabled,
+.prefs-projector__browse:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+  background: var(--color-maru-gray-light) !important;
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+  opacity: 1;
+  translate: none;
+  scale: 1;
+}
+
+.prefs-projector__hint {
+  margin: 0.65rem 0 0;
+  font-size: var(--text-maru-label);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  color: var(--color-maru-gray);
+  text-wrap: pretty;
+}
+
+.prefs-projector__field .prefs-projector__hint {
+  margin-top: 0.4rem;
+}
+
+.prefs-projector__section > .prefs-projector__hint {
+  margin-top: 0;
+}
+
+.prefs-projector__hint-link {
+  color: var(--color-maru-black);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.prefs-projector__hint-link:focus-visible {
+  outline: 3px solid var(--color-maru-blue);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.prefs-projector__section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+  width: 100%;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-maru-black) 18%, transparent);
+}
+
+.prefs-projector__section .desktop-api-keys {
+  gap: 2rem;
+}
+
+.prefs-projector__table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 3px solid var(--color-maru-black);
+  background: var(--color-maru-white);
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+}
+
+.prefs-projector__table th,
+.prefs-projector__table td {
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  vertical-align: baseline;
+  border: 3px solid var(--color-maru-black);
+}
+
+.prefs-projector__table thead th {
+  background: var(--color-maru-gray-light);
+}
+
+.prefs-projector__table tbody th {
+  white-space: nowrap;
+}
+
+.prefs-projector__table td {
+  color: var(--color-maru-gray);
+  overflow-wrap: anywhere;
+}
+
+.prefs-projector__section-title {
+  margin: 0;
+  font-family: var(--font-maru);
+  font-size: var(--text-maru-body);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-maru-black);
+}
+
+.prefs-projector__input {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.7rem;
+  border: 3px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background: var(--color-maru-white);
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  font-size: var(--text-maru-label);
+  line-height: 1.3;
+  color: var(--color-maru-black);
+  transition: box-shadow 0.15s ease-out;
+}
+
+.prefs-projector__input:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--color-maru-blue),
+    3px 3px 0 var(--color-maru-black);
+}
+
+.prefs-projector__input:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+  background: var(--color-maru-gray-light);
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.prefs-projector__file-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.prefs-projector__file-row .prefs-projector__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.prefs-projector__input[readonly] {
+  cursor: text;
+}
+
+.prefs-projector__select {
+  flex-shrink: 0;
+  align-self: stretch;
+  appearance: none;
+  min-width: 5.5rem;
+  min-height: 2.5rem;
+  padding: 0.35rem 1.85rem 0.35rem 0.7rem;
+  border: 3px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background-color: var(--color-maru-white);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--color-maru-black) 50%),
+    linear-gradient(135deg, var(--color-maru-black) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) calc(50% - 0.15rem),
+    calc(100% - 0.7rem) calc(50% - 0.15rem);
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  font-family: var(--font-maru);
+  font-size: var(--text-maru-label);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--color-maru-black);
+  cursor: pointer;
+}
+
+.prefs-projector__select:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px var(--color-maru-blue),
+    3px 3px 0 var(--color-maru-black);
+}
+
+.prefs-projector__select:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--color-maru-black) 40%, var(--color-maru-gray));
+  background-color: var(--color-maru-gray-light);
+  background-image:
+    linear-gradient(
+      45deg,
+      transparent 50%,
+      color-mix(in srgb, var(--color-maru-black) 32%, transparent) 50%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-maru-black) 32%, transparent) 50%,
+      transparent 50%
+    );
+  border-color: color-mix(in srgb, var(--color-maru-black) 28%, transparent);
+  box-shadow: none;
+  opacity: 1;
+}
+
+.prefs-projector__browse {
+  flex-shrink: 0;
+  align-self: stretch;
+  padding: 0.35rem 0.75rem !important;
+  font-size: var(--text-maru-label) !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2 !important;
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  transition:
+    box-shadow 0.15s ease-out,
+    translate 0.15s ease-out,
+    scale 0.15s ease-out;
+}
+
+.prefs-projector__browse .maru-button__label,
+.prefs-projector__done .maru-button__label {
+  top: 0.08em;
+  font-weight: 700;
+}
+
+.prefs-projector__browse:hover:not(:disabled),
+.prefs-projector__done:hover:not(:disabled) {
+  box-shadow: 4px 4px 0 var(--color-maru-black);
+  translate: -1px -1px;
+}
+
+.prefs-projector__browse:active:not(:disabled),
+.prefs-projector__done:active:not(:disabled) {
+  scale: 0.97;
+  box-shadow: 2px 2px 0 var(--color-maru-black);
+  translate: 1px 1px;
+}
+
+.prefs-projector__code {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.7rem;
+  border: 3px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background: var(--color-maru-gray-light);
+  font-size: var(--text-maru-meta);
+  line-height: 1.35;
+  color: var(--color-maru-black);
+  overflow-wrap: anywhere;
+}
+
+.prefs-projector__code-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.prefs-projector__code-row .prefs-projector__code {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.prefs-projector__copy {
+  min-width: 4.75rem;
+}
+
+.prefs-projector__copy--wide {
+  min-width: 8.75rem;
+}
+
+.prefs-projector__copy-label {
+  display: inline-block;
+}
+
+.prefs-copy-label-enter-active,
+.prefs-copy-label-leave-active {
+  transition:
+    opacity 0.18s cubic-bezier(0.2, 0, 0, 1),
+    translate 0.18s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.prefs-copy-label-enter-from {
+  opacity: 0;
+  translate: 0 0.3em;
+}
+
+.prefs-copy-label-leave-to {
+  opacity: 0;
+  translate: 0 -0.25em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prefs-copy-label-enter-active,
+  .prefs-copy-label-leave-active {
+    transition: none;
+  }
+
+  .prefs-copy-label-enter-from,
+  .prefs-copy-label-leave-to {
+    opacity: 1;
+    translate: none;
+  }
+}
+
+.prefs-projector__error {
+  margin: 0;
+  font-size: var(--text-maru-label);
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--color-maru-red);
+}
+
+.prefs-projector__done {
+  align-self: flex-end;
+  padding: 0.4rem 1rem !important;
+  font-size: var(--text-maru-label) !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2 !important;
+  box-shadow: 3px 3px 0 var(--color-maru-black);
+  transition:
+    box-shadow 0.15s ease-out,
+    translate 0.15s ease-out,
+    scale 0.15s ease-out;
+}
+
+.prefs-projector__meta-line {
+  margin: 0;
+  font-size: var(--text-maru-label);
+  line-height: var(--text-maru-label--line-height);
+  letter-spacing: 0.01em;
+  font-weight: 500;
+  color: var(--color-maru-gray);
+  text-wrap: pretty;
+}

@@ -1,0 +1,50 @@
+{
+  "name": "Louis",
+  "version": "1.3.0",
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "private": false,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "start": "node .output/server/index.mjs",
+    "desktop:spike": "electron desktop/main.mjs",
+    "desktop:fetch-binaries": "node desktop/scripts/fetch-binaries.mjs",
+    "desktop:sync-version": "node desktop/scripts/sync-version.mjs",
+    "desktop:dir": "npm run desktop:sync-version && npm run desktop:fetch-binaries && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir --publish never",
+    "desktop:build": "npm run desktop:sync-version && npm run desktop:fetch-binaries -- darwin-arm64 darwin-x64 win32-x64 && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64 --win nsis --x64 --publish never",
+    "desktop:build:mac": "npm run desktop:sync-version && npm run desktop:fetch-binaries -- darwin-arm64 darwin-x64 && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac dmg --arm64 --x64 --publish never",
+    "desktop:build:win": "npm run desktop:sync-version && npm run desktop:fetch-binaries -- win32-x64 && npm run build && CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win nsis --x64 --publish never",
+    "desktop:build:host": "node desktop/scripts/build-host.mjs",
+    "test": "node --experimental-strip-types --test shared/*.test.ts shared/**/*.test.ts server/**/*.test.ts desktop/*.test.mjs desktop/**/*.test.mjs",
+    "diagnose:pipeline": "node --experimental-strip-types scripts/analyze-pipeline-log.mjs",
+    "postinstall": "nuxt prepare",
+    "release": "node desktop/scripts/release-it.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stuartromanek/louis.git"
+  },
+  "dependencies": {
+    "@dnd-kit/vue": "^0.5.0",
+    "@tailwindcss/vite": "^4.3.2",
+    "lottie-web": "^5.13.0",
+    "nuxt": "^4.4.8",
+    "pkce-challenge": "^6.0.0",
+    "tailwindcss": "^4.3.2",
+    "vue": "^3.5.39",
+    "vue-router": "^5.1.0"
+  },
+  "devDependencies": {
+    "@release-it/keep-a-changelog": "^7.1.0",
+    "electron": "^37.10.3",
+    "electron-builder": "^26.15.3",
+    "extract-zip": "^2.0.1",
+    "release-it": "^20.2.1"
+  }
+}

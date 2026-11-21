@@ -1,0 +1,264 @@
+<!--
+  Yoto MYO — list user's Make Your Own cards.
+
+  Requires:
+  - LOUIS_YOTO_CLIENT_ID in .env (public PKCE client; secret optional)
+  - LOUIS_YOTO_REDIRECT_URI registered in Yoto developer portal (production)
+  - Server routes at /api/yoto/auth/* and /api/yoto/content/mine
+-->
+<script setup lang="ts">
+import MaruHeading from '~/components/layout/MaruHeading.vue'
+import { MYO_EDITOR_KEY } from '~/components/myo-editor/keys'
+import { useSelectedResultTracks } from '~/components/youtube-picker/useYoutubePicker'
+import { useYotoMyo } from './useYotoMyo'
+import { useMyoCardFanScroll } from './useMyoCardFanScroll'
+import { YOTO_MYO_KEY } from './keys'
+import YotoMyoCard from './YotoMyoCard.vue'
+import type { YotoMyoCard as YotoMyoCardType } from './types'
+
+withDefaults(defineProps<{
+  embedded?: boolean
+}>(), {
+  embedded: false,
+})
+
+const yoto = inject(YOTO_MYO_KEY, null) ?? useYotoMyo()
+const editor = inject(MYO_EDITOR_KEY, null)
+const selectedResultTracks = useSelectedResultTracks()
+
+const selectedCardId = editor?.selectedCardId
+const editorLoading = editor?.loading
+
+const {
+  cards,
+  status,
+  cardsLoading,
+  errorMessage,
+  connected,
+  connect,
+} = yoto
+
+const {
+  fanRef,
+  dragging,
+  shouldSuppressCardClick,
+  onKeydown,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+} = useMyoCardFanScroll()
+
+function onSelectCard(card: YotoMyoCardType) {
+  if (shouldSuppressCardClick()) return
+  editor?.selectCard(card)
+}
+
+function onStartNewPlaylist() {
+  if (!editor?.startNewPlaylist()) return
+  if (selectedResultTracks.value.length > 0) {
+    editor.queuePendingCreateTracks(selectedResultTracks.value)
+  }
+}
+
+const cardCountLabel = computed(() => {
+  if (!connected.value || status.value !== 'idle' || cardsLoading.value) return ''
+  return `${cards.value.length} ${cards.value.length === 1 ? 'playlist' : 'playlists'}`
+})
+
+const CARD_PLACEHOLDERS = [0, 1, 2, 3, 4, 5, 6, 7]
+</script>
+
+<template>
+  <section v-if="!embedded" class="mt-12">
+    <div class="flex items-baseline justify-between gap-3 mb-4">
+      <MaruHeading text="Playlists" size="md" />
+      <p
+        v-if="cardCountLabel"
+        class="type-meta text-maru-gray"
+      >
+        {{ cardCountLabel }}
+      </p>
+    </div>
+
+    <div class="border-maru rounded-maru bg-maru-turquoise-lighter p-3 sm:p-4 min-h-40">
+      <p
+        v-if="status === 'loading'"
+        class="empty-state-meta py-8 text-center"
+      >
+        Checking Yoto…
+      </p>
+
+      <p
+        v-else-if="status === 'unconfigured' || status === 'error'"
+        class="type-meta text-maru-red py-4 border-maru rounded-maru bg-maru-red-lighter px-4"
+      >
+        {{ errorMessage }}
+      </p>
+
+      <div v-else-if="status === 'disconnected'" class="py-8 text-center">
+        <div class="empty-state gap-3">
+          <MaruEmoji name="Bear" size="lg" />
+          <p class="empty-state-meta">
+            Connect your Yoto account to load your playlists.
+          </p>
+          <button
+            type="button"
+            class="maru-button bg-maru-blue text-maru-white"
+            @click="connect"
+          >
+            <span class="maru-button__label">Connect Yoto</span>
+          </button>
+        </div>
+      </div>
+
+      <ul
+        v-else-if="cardsLoading"
+        class="myo-card-fan list-none m-0 p-0 flex-1 min-h-0"
+        aria-busy="true"
+        aria-label="Loading playlists"
+      >
+        <YotoMyoCard
+          v-for="n in CARD_PLACEHOLDERS"
+          :key="`ph-${n}`"
+          placeholder
+        />
+      </ul>
+
+      <template v-else>
+        <p
+          v-if="cards.length === 0"
+          class="empty-state-meta py-8 text-center"
+        >
+          No playlists found.
+        </p>
+
+        <ul
+          v-else
+          ref="fanRef"
+          class="myo-card-fan list-none m-0 p-0 flex-1 min-h-0"
+          :class="{ 'myo-card-fan--dragging': dragging }"
+          tabindex="0"
+          aria-label="Playlists"
+          @keydown="onKeydown"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerCancel"
+        >
+          <YotoMyoCard
+            v-for="card in cards"
+            :key="card.cardId"
+            :card="card"
+            :selected="selectedCardId === card.cardId"
+            :loading="editorLoading && selectedCardId === card.cardId"
+            @select="onSelectCard"
+          />
+        </ul>
+      </template>
+    </div>
+
+    <div v-if="connected" class="mt-3 flex gap-4">
+      <button
+        type="button"
+        class="font-maru-mono font-maru-regular text-xs text-maru-gray underline"
+        @click="onStartNewPlaylist"
+      >
+        New
+      </button>
+      <button
+        type="button"
+        class="font-maru-mono font-maru-regular text-xs text-maru-gray underline"
+        @click="yoto.refresh"
+      >
+        Refresh
+      </button>
+      <button
+        type="button"
+        class="font-maru-mono font-maru-regular text-xs text-maru-gray underline"
+        @click="yoto.disconnect"
+      >
+        Disconnect
+      </button>
+    </div>
+
+    <button
+      v-else-if="status === 'error'"
+      type="button"
+      class="mt-3 font-maru-mono font-maru-regular text-xs text-maru-gray underline"
+      @click="yoto.refresh"
+    >
+      Retry
+    </button>
+  </section>
+
+  <template v-else>
+    <div class="flex flex-col flex-1 min-h-0 h-full w-full overflow-hidden">
+      <p
+        v-if="status === 'loading'"
+        class="empty-state flex-1 min-h-0 w-full empty-state-meta"
+      >
+        Checking Yoto…
+      </p>
+
+      <p
+        v-else-if="status === 'unconfigured' || status === 'error'"
+        class="type-meta text-maru-red py-4 border-maru rounded-maru bg-maru-red-lighter px-4"
+      >
+        {{ errorMessage }}
+      </p>
+
+      <div v-else-if="status === 'disconnected'" class="empty-state flex-1 min-h-0 w-full gap-3">
+        <MaruEmoji name="Bear" size="lg" />
+        <p class="empty-state-meta">
+          Connect your Yoto account to load your playlists.
+        </p>
+      </div>
+
+      <ul
+        v-else-if="cardsLoading"
+        class="myo-card-fan list-none m-0 p-0 flex-1 min-h-0"
+        aria-busy="true"
+        aria-label="Loading playlists"
+      >
+        <YotoMyoCard
+          v-for="n in CARD_PLACEHOLDERS"
+          :key="`ph-${n}`"
+          placeholder
+        />
+      </ul>
+
+      <template v-else>
+        <p
+          v-if="cards.length === 0"
+          class="empty-state flex-1 min-h-0 w-full empty-state-meta"
+        >
+          No playlists found.
+        </p>
+
+        <ul
+          v-else
+          ref="fanRef"
+          class="myo-card-fan list-none m-0 p-0 flex-1 min-h-0"
+          :class="{ 'myo-card-fan--dragging': dragging }"
+          tabindex="0"
+          aria-label="Playlists"
+          @keydown="onKeydown"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerCancel"
+        >
+          <YotoMyoCard
+            v-for="card in cards"
+            :key="card.cardId"
+            :card="card"
+            :selected="selectedCardId === card.cardId"
+            :loading="editorLoading && selectedCardId === card.cardId"
+            @select="onSelectCard"
+          />
+        </ul>
+      </template>
+    </div>
+  </template>
+</template>

@@ -1,0 +1,48 @@
+import { hasContentManageScope } from '../../../../utils/yoto-auth'
+import { startSaveJob } from '../../../../utils/save-jobs'
+import { getYotoAccessToken, getYotoAuthScope } from '../../../../utils/yoto'
+import type { PlaylistTrack } from '#shared/myo-editor/types'
+
+interface SaveRequestBody {
+  playlist: PlaylistTrack[]
+  baselinePlaylist: PlaylistTrack[]
+  cardTitle: string
+  /** When true, skip our MYO capacity gates and let Yoto decide. */
+  acknowledgeCapacityRisk?: boolean
+  /** Level new YouTube extracts with ffmpeg loudnorm before upload. */
+  normalizeVolume?: boolean
+}
+
+export default defineEventHandler(async (event) => {
+  const cardId = getRouterParam(event, 'cardId')
+  if (!cardId) {
+    throw createError({ statusCode: 400, statusMessage: 'cardId is required' })
+  }
+
+  // Desktop system-browser OAuth stores scope in yoto-session.json, not cookies.
+  const scope = getYotoAuthScope(event)
+  if (!hasContentManageScope(scope)) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Reconnect to Yoto to grant playlist edit permission (user:content:manage).',
+    })
+  }
+
+  await getYotoAccessToken(event)
+
+  const body = await readBody<SaveRequestBody>(event)
+  if (!Array.isArray(body?.playlist)) {
+    throw createError({ statusCode: 400, statusMessage: 'playlist is required' })
+  }
+
+  const job = startSaveJob(
+    event,
+    { operation: 'update', cardId },
+    body.playlist,
+    body.cardTitle?.trim() || 'Playlist',
+    Array.isArray(body.baselinePlaylist) ? body.baselinePlaylist : [],
+    { acknowledgeCapacityRisk: body.acknowledgeCapacityRisk === true, normalizeVolume: body.normalizeVolume === true },
+  )
+
+  return { jobId: job.id, status: job.status }
+})

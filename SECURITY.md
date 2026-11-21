@@ -1,0 +1,31 @@
+# Security Policy
+
+## Supported versions
+
+Security fixes are applied to the latest release on the default branch.
+
+## Reporting a vulnerability
+
+Please **do not** open a public GitHub issue for security vulnerabilities.
+
+Report security issues privately to the repository maintainer via GitHub Security Advisories or direct contact if you have it.
+
+Include:
+
+- Description of the vulnerability
+- Steps to reproduce
+- Impact assessment
+- Suggested fix (if any)
+
+## Scope notes
+
+- This app stores Yoto OAuth tokens in httpOnly cookies on the server (self-host / Docker). The desktop app also writes tokens to `yoto-session.json` under Application Support after system-browser Connect — treat that file like a secret.
+- Self-hosters should use HTTPS when exposing Louis beyond a trusted LAN. The Docker image defaults OAuth cookies to `LOUIS_COOKIE_SECURE=false` (plain HTTP / Portainer / HA LAN). Set `true` behind TLS / reverse proxy. Node-without-Docker still defaults to `Secure` when `NODE_ENV=production`.
+- Do not commit `.env`, API keys, refresh tokens, or YouTube `cookies.txt`
+- `LOUIS_YTDLP_COOKIES_FILE` (when set on any deploy) is a server secret — never expose path or contents via debug routes or API responses; prefer a throwaway Google account
+- Louis builds may include a **public** Yoto PKCE client ID (not a secret). Desktop setup / Settings can prefill it via **Use default client**. Self-host still requires an explicit `LOUIS_YOTO_CLIENT_ID` in `.env` (no silent fallback). Do **not** embed YouTube API keys, client secrets, cookies, or OAuth tokens in installers or images — those live in user-writable app data (`config.json` / env) only. Optional yt-dlp cookies are a **user-chosen file path**, never shipped inside the DMG/NSIS
+- Treat unsigned desktop builds like any other downloaded binary until release signing is enabled ([docs/DESKTOP_SIGNING.md](docs/DESKTOP_SIGNING.md))
+
+## Out of scope
+
+- User-provided fonts or sound assets without redistribution rights

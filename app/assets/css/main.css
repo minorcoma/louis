@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* Safelist maru color utilities used via dynamic :class bindings */
+@source inline("bg-maru-white bg-maru-black bg-maru-gray bg-maru-gray-light bg-maru-brown bg-maru-red bg-maru-red-light bg-maru-red-lighter bg-maru-orange bg-maru-yellow bg-maru-yellow-light bg-maru-green bg-maru-green-light bg-maru-green-lighter bg-maru-turquoise bg-maru-turquoise-light bg-maru-turquoise-lighter bg-maru-blue bg-maru-blue-light bg-maru-blue-lighter bg-maru-magenta bg-maru-magenta-light bg-maru-magenta-lighter");
+@source inline("text-maru-white text-maru-black text-maru-gray text-maru-gray-light text-maru-brown text-maru-red text-maru-red-light text-maru-red-lighter text-maru-orange text-maru-yellow text-maru-yellow-light text-maru-green text-maru-green-light text-maru-green-lighter text-maru-turquoise text-maru-turquoise-light text-maru-turquoise-lighter text-maru-blue text-maru-blue-light text-maru-blue-lighter text-maru-magenta text-maru-magenta-light text-maru-magenta-lighter");
+@source inline("mb-maru-xs mb-maru-s mb-maru-m mb-maru-l");
+
+@import "./fonts.css";
+@import "./theme.css";
+@import "./base.css";
+@import "./utilities.css";
+@import "./typography.css";
+@import "./primitives.css";
+@import "./typetester.css";
+@import "./youtube.css";
+@import "./playlist.css";
+@import "./panel-footer.css";
+@import "./mobile.css";
+@import "./tray.css";
+@import "./app-flyout.css";
+@import "./status-bar.css";
+@import "./splash.css";
+@import "./auth-gate.css";
+@import "./preferences.css";
+@import "./howto.css";
+@import "./track-art.css";
+@import "./track-trim.css";
