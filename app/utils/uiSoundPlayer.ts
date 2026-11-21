@@ -7,7 +7,7 @@ import {
   uiSoundPath,
   uiSoundVariants,
 } from './uiSoundCatalog.ts'
-import { rewindLoadedAudio } from '../../shared/rewindLoadedAudio.ts'
+import { rewindLoadedAudio } from '#shared/rewindLoadedAudio'
 
 const POOL_SIZE = 3
 /** Extra overlapping one-shots (pixel paint/erase) before we steal a busy voice. */
