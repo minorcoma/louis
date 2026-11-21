@@ -26,6 +26,9 @@
     "postinstall": "nuxt prepare",
     "release": "node desktop/scripts/release-it.mjs"
   },
+  "imports": {
+    "#shared/*": "./shared/*.ts"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/stuartromanek/louis.git"

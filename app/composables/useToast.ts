@@ -30,11 +30,21 @@ export type ToastInstallHelpPayload = ToastPlacement & {
   kind: 'install-help'
 }
 
+/** One YouTube source stopped a save; actions live on the editor (Retry / Remove). */
+export type ToastSaveFailedPayload = ToastPlacement & {
+  kind: 'save-failed'
+  trackTitle: string
+  stage: 'download' | 'process'
+  message: string
+  rowCount: number
+}
+
 export type ToastPayload =
   | ToastAddedPayload
   | ToastDuplicatePayload
   | ToastErrorPayload
   | ToastInstallHelpPayload
+  | ToastSaveFailedPayload
 
 /** Client-only timer handle — never touched during SSR. */
 const clientTimer: { id: ReturnType<typeof setTimeout> | null } = { id: null }
@@ -136,6 +146,23 @@ export function useToast() {
     scheduleAutoClose(durationMs)
   }
 
+  function showSaveFailed(failure: {
+    title: string
+    stage: 'download' | 'process'
+    error: string
+    rowCount: number
+  }) {
+    payload.value = {
+      kind: 'save-failed',
+      trackTitle: failure.title.trim() || 'A track',
+      stage: failure.stage,
+      message: failure.error.trim(),
+      rowCount: failure.rowCount,
+      ...defaultToastPlacement(),
+    }
+    scheduleAutoClose(0)
+  }
+
   function showInstallHelp() {
     payload.value = {
       kind: 'install-help',
@@ -151,6 +178,7 @@ export function useToast() {
     showDuplicateTrack,
     showError,
     showInstallHelp,
+    showSaveFailed,
     persistent,
     dismiss,
   }

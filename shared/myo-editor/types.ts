@@ -168,6 +168,19 @@ export interface SaveJobTrackProgress {
   error?: string
 }
 
+/** The YouTube source that stopped a save, so the client can offer Retry / Remove. */
+export interface SaveJobFailedSource {
+  youtubeId: string
+  /** Title of the source as shown in the playlist (first part when split). */
+  title: string
+  /** Every playlist row that comes from this source (all split parts). */
+  playlistIndexes: number[]
+  /** Which step failed: the YouTube download, or cutting/uploading/transcoding it. */
+  stage: 'download' | 'process'
+  /** Underlying error without the title prefix. */
+  error: string
+}
+
 export interface SaveJobState {
   id: string
   operation?: 'create' | 'update'
@@ -180,6 +193,8 @@ export interface SaveJobState {
   operationProgress: number
   error?: string
   outcomeUncertain?: boolean
+  /** Set when one YouTube source failed to download or process. */
+  failedSource?: SaveJobFailedSource
   tracks: SaveJobTrackProgress[]
   createdAt: number
   /** Last time this job was written (heartbeat while Yoto transcode polls). */

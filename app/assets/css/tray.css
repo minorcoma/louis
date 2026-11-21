@@ -198,6 +198,10 @@
   gap: 0;
 }
 
+.toast__stack--error.toast__stack--actions {
+  gap: 0.6rem;
+}
+
 .tray--toast:has(.toast__stack--error) .tray__face {
   background: var(--color-maru-red-lighter);
 }
@@ -350,6 +354,26 @@
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
     background-color 150ms ease,
     box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.toast__actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.toast__actions > .toast__update {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.toast__update--secondary {
+  background: var(--color-maru-white);
+  color: var(--color-maru-black);
+}
+
+.toast__detail {
+  opacity: 0.75;
+  overflow-wrap: anywhere;
 }
 
 .toast__update-label {

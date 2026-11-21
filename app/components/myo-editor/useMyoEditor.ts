@@ -17,7 +17,7 @@ import {
   writePersistedDrafts,
   writePodcastCardIds,
 } from './draftPersistence'
-import type { SaveJobState, YotoCardDetail } from './types'
+import type { SaveJobFailedSource, SaveJobState, YotoCardDetail } from './types'
 import { getPlaylistCapacitySnapshot, getPlaylistPreflightLimitError } from '#shared/myo-editor/yotoMyoLimits'
 import {
   applySourceTrimAndSplit,
@@ -60,6 +60,12 @@ import {
 } from '#shared/myo-editor/savePoll'
 import type { PlaylistArtworkSpec } from '#shared/myo-editor/playlistArtwork'
 import { canRefreshSelectedPlaylist } from '#shared/myo-editor/playlistSync'
+
+export type SaveFailurePrompt = Pick<SaveJobFailedSource, 'youtubeId' | 'title' | 'stage' | 'error'> & {
+  saveKey: string
+  /** How many playlist rows (split parts) come from this source. */
+  rowCount: number
+}
 
 export type UpdatePromptKind = 'capacity' | 'normalize'
 export type UpdatePromptSurface = 'footer' | 'dialog'
@@ -134,6 +140,11 @@ export interface MyoEditorContext {
   activeSaveProgress: ComputedRef<number | null>
   saveProgress: ComputedRef<SaveProgress | null>
   errorMessage: Ref<string>
+  /** A YouTube source stopped the last save; offer Retry / Remove instead of a bare error. */
+  saveFailure: Ref<SaveFailurePrompt | null>
+  retryFailedSave: () => void
+  removeFailedSourceAndRetry: () => void
+  dismissSaveFailure: () => void
   isDirty: ComputedRef<boolean>
   pendingPlaylistUpdateCount: ComputedRef<number>
   /** Card ids with stashed unpublished drafts (not including the live selection). */
@@ -289,6 +300,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
   const isPodcast = ref(false)
   const loading = ref(false)
   const errorMessage = ref('')
+  const saveFailure = ref<SaveFailurePrompt | null>(null)
 
   function setCreateOutcomeUncertain(value: boolean) {
     if (value) uncertainCreateCoverDismissed.value = false
@@ -447,6 +459,10 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
   const selectedSaveKey = computed(() =>
     isNewPlaylist.value ? NEW_PLAYLIST_SAVE_KEY : selectedCardId.value,
   )
+
+  watch(selectedSaveKey, (key) => {
+    if (saveFailure.value && saveFailure.value.saveKey !== key) saveFailure.value = null
+  })
 
   const isEditing = computed(() =>
     isPlaylistEditorActive(selectedCardId.value, isNewPlaylist.value),
@@ -701,7 +717,12 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
     }
   }
 
-  function handleSaveFailed(saveKey: string, message: string, outcomeUncertain = false) {
+  function handleSaveFailed(
+    saveKey: string,
+    message: string,
+    outcomeUncertain = false,
+    failedSource?: SaveJobFailedSource,
+  ) {
     playEvent('saveError')
     const displayMessage = message.length > 420 ? `${message.slice(0, 417)}…` : message
     deleteSaveState(saveKey)
@@ -711,9 +732,56 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
       setCreateOutcomeUncertain(true)
     }
 
-    if (selectedSaveKey.value === saveKey) {
-      errorMessage.value = displayMessage
+    if (selectedSaveKey.value !== saveKey) return
+
+    const rowCount = failedSource
+      ? playlist.value.filter(track => track.youtubeId === failedSource.youtubeId).length
+      : 0
+    if (failedSource && !outcomeUncertain && rowCount > 0) {
+      errorMessage.value = ''
+      saveFailure.value = {
+        saveKey,
+        youtubeId: failedSource.youtubeId,
+        title: failedSource.title,
+        stage: failedSource.stage,
+        error: failedSource.error.length > 300 ? `${failedSource.error.slice(0, 297)}…` : failedSource.error,
+        rowCount,
+      }
+      return
     }
+    errorMessage.value = displayMessage
+  }
+
+  /** Prompt only applies while its playlist is still the one on screen. */
+  function activeSaveFailure(): SaveFailurePrompt | null {
+    const failure = saveFailure.value
+    if (!failure || failure.saveKey !== selectedSaveKey.value) {
+      saveFailure.value = null
+      return null
+    }
+    return failure
+  }
+
+  function dismissSaveFailure() {
+    saveFailure.value = null
+  }
+
+  function retryFailedSave() {
+    if (!activeSaveFailure()) return
+    saveFailure.value = null
+    requestUpdate('dialog')
+  }
+
+  function removeFailedSourceAndRetry() {
+    const failure = activeSaveFailure()
+    if (!failure) return
+    saveFailure.value = null
+    if (isPlaylistLocked.value || isPodcast.value) return
+    const next = playlist.value.filter(track => track.youtubeId !== failure.youtubeId)
+    if (next.length === playlist.value.length) return
+    playlist.value = next
+    if (next.length === 0) return
+    requestUpdate('dialog')
   }
 
   function updateSaveStateFromJob(saveKey: string, job: SaveJobState) {
@@ -781,7 +849,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
       }
 
       if (job.status === 'failed') {
-        handleSaveFailed(saveKey, job.error ?? 'Save failed', job.outcomeUncertain === true)
+        handleSaveFailed(saveKey, job.error ?? 'Save failed', job.outcomeUncertain === true, job.failedSource)
         return
       }
 
@@ -810,6 +878,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
     options?: { acknowledgeCapacityRisk?: boolean, normalizeVolume?: boolean },
   ) {
     const identity = resolveClientSaveTarget(target)
+    if (saveFailure.value?.saveKey === identity.saveKey) saveFailure.value = null
     const pending = createLocalPlanningSave({
       saveKey: identity.saveKey,
       cardId: identity.operation === 'update' ? identity.cardId : undefined,
@@ -863,7 +932,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
         if (isTerminalStatus(job.status)) {
           removePersistedSave(saveKey)
           if (job.status === 'failed') {
-            handleSaveFailed(saveKey, job.error ?? 'Save failed', job.outcomeUncertain === true)
+            handleSaveFailed(saveKey, job.error ?? 'Save failed', job.outcomeUncertain === true, job.failedSource)
           }
           if (job.status === 'complete' && selectedSaveKey.value === saveKey) {
             await finalizeSaveSuccess(saveKey)
@@ -1873,6 +1942,10 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
     activeSaveProgress,
     saveProgress,
     errorMessage,
+    saveFailure,
+    retryFailedSave,
+    removeFailedSourceAndRetry,
+    dismissSaveFailure,
     isDirty,
     pendingPlaylistUpdateCount,
     pendingDraftCardIds,

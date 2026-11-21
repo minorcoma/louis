@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { H3Event } from 'h3'
 import type {
   PlaylistTrack,
+  SaveJobFailedSource,
   SaveJobState,
   SaveJobTrackProgress,
   SaveTrackAction,
@@ -267,6 +268,17 @@ async function runSaveJob(
 
   const uploadedByIndex = new Map<number, TranscodedAudioResult>()
   let createOutcomeUncertain = false
+  let failedSource: SaveJobFailedSource | undefined
+  const sourceFailures = new WeakMap<object, { youtubeId: string, stage: SaveJobFailedSource['stage'] }>()
+  /** First tag wins: the source where the error was raised, not one that re-threw it. */
+  function tagSourceFailure(err: unknown, youtubeId: string, stage: SaveJobFailedSource['stage']) {
+    if (!err || typeof err !== 'object' || sourceFailures.has(err)) return
+    sourceFailures.set(err, { youtubeId, stage })
+  }
+  function sourceFailureOf(err: unknown) {
+    if (!err || typeof err !== 'object') return undefined
+    return sourceFailures.get(err)
+  }
   let workingPlaylist = playlist
   const stopHeartbeat = startSaveJobHeartbeat(jobId)
 
@@ -576,6 +588,7 @@ async function runSaveJob(
             normalizeVolume,
             error: e.statusMessage ?? e.message ?? 'extract failed',
           })
+          tagSourceFailure(err, youtubeId, 'download')
           throw err
         }
         replanFromProbedDurations()
@@ -788,7 +801,10 @@ async function runSaveJob(
     for (const youtubeId of uniqueYoutubeIds) {
       const snapshot = snapshotChain.then(async () => {
         if (extractFatal) throw extractFatal
-        return snapshotGroup(youtubeId)
+        return snapshotGroup(youtubeId).catch((err: unknown) => {
+          tagSourceFailure(err, youtubeId, 'process')
+          throw err
+        })
       })
       snapshotChain = snapshot.then(() => undefined, (err) => {
         extractFatal = extractFatal ?? err
@@ -846,6 +862,9 @@ async function runSaveJob(
           })
         }
         catch (err) {
+          // Tag before publishing as extractFatal so other groups that re-throw
+          // it don't get blamed for this source.
+          tagSourceFailure(err, youtubeId, 'process')
           extractFatal = extractFatal ?? err
           throw err
         }
@@ -856,7 +875,25 @@ async function runSaveJob(
     const groupFailure = groupResults.find(
       (result): result is PromiseRejectedResult => result.status === 'rejected',
     )
-    if (groupFailure) throw groupFailure.reason
+    if (groupFailure) {
+      const fatal = extractFatal ?? groupFailure.reason
+      const origin = sourceFailureOf(fatal)
+      if (origin) {
+        const playlistIndexes = workingPlaylist
+          .map((track, index) => (track.youtubeId === origin.youtubeId ? index : -1))
+          .filter(index => index >= 0)
+        const firstTitle = workingPlaylist[playlistIndexes[0] ?? -1]?.title
+        const e = fatal as { statusMessage?: string; message?: string }
+        failedSource = {
+          youtubeId: origin.youtubeId,
+          title: firstTitle?.trim() || origin.youtubeId,
+          playlistIndexes,
+          stage: origin.stage,
+          error: e.statusMessage ?? e.message ?? 'Unknown error',
+        }
+      }
+      throw fatal
+    }
 
     const extractCount = extractActions.length
 
@@ -983,10 +1020,14 @@ async function runSaveJob(
     const trackTitle = activeSaveTrackTitle(job)
       ?? firstOverLimitTrackTitle(workingPlaylist, uploadedByIndex)
     const raw = e.statusMessage ?? e.message ?? 'Save failed'
-    const message = withMappedYotoLimitError(
+    const mapped = withMappedYotoLimitError(
       hostDiskFullMessageIfMatch(raw) ?? raw,
       trackTitle,
     )
+    const message = failedSource
+      ? `Couldn't ${failedSource.stage === 'download' ? 'download' : 'process'} "${failedSource.title}": ${mapped}`
+      : mapped
+    if (failedSource) failedSource.error = mapped
 
     for (const track of job.tracks) {
       if (
@@ -1005,6 +1046,7 @@ async function runSaveJob(
       status: 'failed',
       error: message,
       outcomeUncertain: createOutcomeUncertain || undefined,
+      failedSource,
       progress: 100,
     })
     return 'failed'

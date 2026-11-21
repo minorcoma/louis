@@ -5,6 +5,7 @@ export type {
   YotoCardDetail,
   ProvenanceTrackEntry,
   YotoCardsManifest,
+  SaveJobFailedSource,
   SaveJobState,
   SaveJobPhase,
   SaveTrackStatus,

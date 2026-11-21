@@ -4,7 +4,7 @@ import { MYO_EDITOR_KEY } from '~/components/myo-editor/keys'
 import { YOTO_MYO_KEY } from '~/components/yoto-myo/keys'
 import { defaultToastPlacement } from '~/composables/useToast'
 
-const { open, payload, persistent, dismiss, showError } = useToast()
+const { open, payload, persistent, dismiss, showError, showSaveFailed } = useToast()
 const { platform } = usePwaInstall()
 const { playEvent } = useUiSound()
 const editor = inject(MYO_EDITOR_KEY, null)
@@ -17,7 +17,8 @@ const trayOpen = computed({
   },
 })
 
-const isErrorToast = computed(() => payload.value?.kind === 'error')
+const isErrorToast = computed(() => payload.value?.kind === 'error' || payload.value?.kind === 'save-failed')
+const isSaveFailedToast = computed(() => payload.value?.kind === 'save-failed')
 const isDuplicateToast = computed(() => payload.value?.kind === 'duplicate')
 const isInstallHelp = computed(() => payload.value?.kind === 'install-help')
 
@@ -30,6 +31,7 @@ const trayTitle = computed(() => {
   if (data.kind === 'install-help') return 'Add to Home Screen'
   if (data.kind === 'duplicate') return 'Duplicate Track added'
   if (data.kind === 'error') return data.title
+  if (data.kind === 'save-failed') return data.stage === 'download' ? 'Download failed' : 'Track failed'
   return undefined
 })
 
@@ -37,6 +39,7 @@ const message = computed(() => {
   const data = payload.value
   if (!data) return ''
   if (data.kind === 'error') return data.message
+  if (data.kind === 'save-failed') return `Couldn't save ${data.trackTitle}: ${data.message}`
   if (data.kind === 'install-help') return 'Add to Home Screen'
   if (data.kind === 'duplicate') {
     return `${data.trackTitle} is already on this playlist. It will not be added again.`
@@ -64,8 +67,32 @@ function onUpdatePlaylists() {
 }
 
 function onDismiss() {
+  if (isSaveFailedToast.value) editor?.dismissSaveFailure()
   dismiss()
 }
+
+function onRetryFailed() {
+  playEvent('buttonPrimary')
+  dismiss()
+  editor?.retryFailedSave()
+}
+
+function onRemoveFailed() {
+  playEvent('buttonPrimary')
+  dismiss()
+  editor?.removeFailedSourceAndRetry()
+}
+
+watch(
+  () => editor?.saveFailure.value ?? null,
+  (failure) => {
+    if (failure) {
+      showSaveFailed(failure)
+      return
+    }
+    if (isSaveFailedToast.value && open.value) dismiss()
+  },
+)
 
 function toastError(msg: string, prev: string) {
   if (!msg || msg === prev) return
@@ -147,6 +174,35 @@ watch(open, (isOpen, wasOpen) => {
         <span class="toast__emphasis font-maru-bold">{{ payload.trackTitle }}</span>
         is already on this playlist. It will not be added again.
       </p>
+    </div>
+
+    <div
+      v-else-if="payload?.kind === 'save-failed'"
+      class="toast__stack toast__stack--error toast__stack--actions"
+    >
+      <p class="toast__message type-body m-0">
+        <span class="toast__emphasis font-maru-medium">{{ payload.trackTitle }}</span>
+        {{ payload.stage === 'download' ? "couldn't be downloaded" : "couldn't be prepared" }}, so the playlist wasn't updated.
+      </p>
+      <p class="toast__detail type-meta-sm m-0">
+        {{ payload.message }}
+      </p>
+      <div class="toast__actions">
+        <button
+          type="button"
+          class="toast__update"
+          @click="onRetryFailed"
+        >
+          <span class="toast__update-label">Retry</span>
+        </button>
+        <button
+          type="button"
+          class="toast__update toast__update--secondary"
+          @click="onRemoveFailed"
+        >
+          <span class="toast__update-label">{{ payload.rowCount > 1 ? `Remove (${payload.rowCount} parts) & update` : 'Remove & update' }}</span>
+        </button>
+      </div>
     </div>
 
     <div
