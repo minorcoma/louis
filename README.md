@@ -95,7 +95,7 @@ Equivalent on GHCR: `ghcr.io/stuartromanek/louis:latest` (and `:vX.Y.Z`).
 
 Install Louis from Supervisor as a custom add-on (wraps the same GHCR image; options map to `LOUIS_*`; audio under `/data/audio`; UI on host port **4000**, not ingress).
 
-1. **Settings → Apps → Install app → ⋮ → Repositories** (older releases: **Add-ons → Add-on store**) → add the git URL of this fork. Upstream `https://github.com/stuartromanek/louis` is rejected by current Supervisor until `youtube_safe_search` there is a schema type string.
+1. **Settings → Apps → Install app → ⋮ → Repositories** (older releases: **Add-ons → Add-on store**) → add `https://github.com/minorcoma/louis`. Upstream `https://github.com/stuartromanek/louis` is rejected by current Supervisor until `youtube_safe_search` there is a schema type string.
 2. Install **Louis**. Defaults use Louis’s bundled Yoto client and `http://homeassistant.local:4000/api/yoto/auth/callback` — no yoto.dev app needed if you keep both. Change the redirect off that URI only with your **own** public client (see [DOCS.md](homeassistant/louis/DOCS.md)). **youtube_api_key** is recommended (Data API search); leave empty to search with bundled yt-dlp. **youtube_safe_search** (`none` / `moderate` / `strict`) applies to typed search only when a key is set.
 3. Open `http://homeassistant.local:4000` (or your host:port)
 

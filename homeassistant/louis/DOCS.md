@@ -5,7 +5,7 @@ Louis as a Supervisor add-on: same app as Docker/GHCR, configured via **Options*
 ## Install
 
 1. **Settings → Apps → Install app → ⋮ → Repositories** (older releases call this **Add-ons → Add-on store**)
-2. Add the git URL of the repository that contains `homeassistant/louis/`. Upstream [stuartromanek/louis](https://github.com/stuartromanek/louis) is rejected by current Supervisor until `youtube_safe_search` there is a schema type string (`list(none|moderate|strict)`), not a nested `name` / `select` map.
+2. Add `https://github.com/minorcoma/louis`. Upstream [stuartromanek/louis](https://github.com/stuartromanek/louis) is rejected by current Supervisor until `youtube_safe_search` there is a schema type string (`list(none|moderate|strict)`), not a nested `name` / `select` map.
 3. Refresh the store, install **Louis**, then open **Configuration**
 
 > Sources: `homeassistant/louis/` in this repo. Root `repository.yaml` and `louis/` are symlinks so Supervisor (which expects those at the git root) can discover the add-on when you add `https://github.com/stuartromanek/louis`.
