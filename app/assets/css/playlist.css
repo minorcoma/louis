@@ -40,6 +40,8 @@
 }
 
 .myo-card-fan {
+  /* Cards size off the fan's height (cqh) — see YotoMyoCard.vue. */
+  container-type: size;
   display: flex;
   flex-direction: row;
   align-items: center;

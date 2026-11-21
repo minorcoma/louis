@@ -150,12 +150,18 @@ const cardMotionStyle = computed(() => {
 
 <style scoped>
 .myo-playing-card-slot {
+  /*
+   * Size the card explicitly from the fan's height instead of letting the
+   * width fall out of aspect-ratio + max-content on a percentage height.
+   * Firefox (and Zen etc.) resolve that intrinsic width to ~0, which collapsed
+   * every card onto one spot. 1.55rem = label row, 6px = face border.
+   */
+  --myo-slot-h: max(9.25rem, 90cqh);
   position: relative;
   display: flex;
   flex: 0 0 auto;
-  height: 90%;
-  width: auto;
-  min-height: 9.25rem;
+  height: var(--myo-slot-h);
+  width: calc((var(--myo-slot-h) - 1.55rem - 6px) * 638 / 1011 + 6px);
   overflow: visible;
   transition: z-index 0ms;
 }
@@ -164,7 +170,7 @@ const cardMotionStyle = computed(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  width: auto;
+  width: 100%;
   transform: rotate(var(--card-rotate, 0deg));
   transform-origin: center 88%;
   animation: myo-card-wobble var(--wobble-duration, 3.5s) ease-in-out infinite;
@@ -216,7 +222,7 @@ const cardMotionStyle = computed(() => {
   position: relative;
   display: block;
   height: 100%;
-  width: max-content;
+  width: 100%;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -252,9 +258,9 @@ const cardMotionStyle = computed(() => {
 .myo-playing-card__face {
   display: grid;
   grid-template-rows: minmax(0, 1fr) 1.55rem;
-  grid-template-columns: min-content;
+  grid-template-columns: minmax(0, 1fr);
   height: 100%;
-  width: max-content;
+  width: 100%;
   box-sizing: border-box;
   background: var(--color-maru-white);
   box-shadow: 2px 3px 0 var(--color-maru-black);
@@ -282,12 +288,10 @@ const cardMotionStyle = computed(() => {
 
 .myo-playing-card__art {
   position: relative;
-  justify-self: start;
   min-width: 0;
   min-height: 0;
   height: 100%;
-  aspect-ratio: 638 / 1011;
-  width: auto;
+  width: 100%;
   overflow: hidden;
   background: var(--color-maru-gray-light);
 }
