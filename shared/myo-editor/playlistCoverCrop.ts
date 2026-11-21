@@ -6,10 +6,14 @@ export const PLAYLIST_COVER_EXPORT_WIDTH = 638
 export const PLAYLIST_COVER_EXPORT_HEIGHT = 1011
 export const PLAYLIST_COVER_ASPECT_WIDTH = PLAYLIST_COVER_EXPORT_WIDTH
 export const PLAYLIST_COVER_ASPECT_HEIGHT = PLAYLIST_COVER_EXPORT_HEIGHT
-/** Zoom 1 = object-fit contain (full image visible). */
+/**
+ * Zoom 1 = object-fit cover: the image always fills the 638×1011 frame, so a
+ * crop can never leave letterbox bars (Yoto shows them as black). Zoom in
+ * and pan to choose the region.
+ */
 export const PLAYLIST_COVER_ZOOM_MIN = 1
 export const PLAYLIST_COVER_ZOOM_MAX = 4
-/** Letterbox behind contain; must match the crop stage. */
+/** Canvas/stage fill behind the image. Unseen now that zoom never drops below cover. */
 export const PLAYLIST_COVER_LETTERBOX = '#000000'
 
 export const PLAYLIST_COVER_ACCEPT
@@ -31,7 +35,7 @@ export const PLAYLIST_COVER_UPLOAD_MAX_BYTES = 1_500_000
 
 export type CoverCrop = {
   zoom: number
-  /** -1..1, 0 is centered. Unused until dest overflows the frame. */
+  /** -1..1, 0 is centered. Moves along whichever axis overflows the frame. */
   panX: number
   panY: number
 }
@@ -93,16 +97,14 @@ export function coverFitScale(
   }
 }
 
-/** Zoom at which the image fills the Yoto cover frame (object-fit: cover). */
+/** Zoom at which the image fills the Yoto cover frame. Always 1: zoom is cover-based. */
 export function coverFitZoom(
-  imageWidth: number,
-  imageHeight: number,
-  frameWidth: number = PLAYLIST_COVER_EXPORT_WIDTH,
-  frameHeight: number = PLAYLIST_COVER_EXPORT_HEIGHT,
+  _imageWidth?: number,
+  _imageHeight?: number,
+  _frameWidth?: number,
+  _frameHeight?: number,
 ): number {
-  const { contain, cover } = coverFitScale(imageWidth, imageHeight, frameWidth, frameHeight)
-  if (!(contain > 0)) return 1
-  return cover / contain
+  return PLAYLIST_COVER_ZOOM_MIN
 }
 
 function destSize(
@@ -112,11 +114,11 @@ function destSize(
   frameWidth: number,
   frameHeight: number,
 ): { width: number, height: number } {
-  const { contain } = coverFitScale(imageWidth, imageHeight, frameWidth, frameHeight)
+  const { cover } = coverFitScale(imageWidth, imageHeight, frameWidth, frameHeight)
   const z = clamp(zoom, PLAYLIST_COVER_ZOOM_MIN, PLAYLIST_COVER_ZOOM_MAX)
   return {
-    width: imageWidth * contain * z,
-    height: imageHeight * contain * z,
+    width: imageWidth * cover * z,
+    height: imageHeight * cover * z,
   }
 }
 
@@ -125,7 +127,7 @@ function axisOrigin(slack: number, pan: number): number {
   return slack / 2 + pan * (slack / 2)
 }
 
-/** Image placement in the Yoto cover frame. Zoom 1 is contain; canvas clips when dest overflows. */
+/** Image placement in the Yoto cover frame. Zoom 1 is cover; the canvas clips the overflow. */
 export function coverDestRect(
   imageWidth: number,
   imageHeight: number,

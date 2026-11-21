@@ -33,30 +33,29 @@ describe('playlistCoverCrop', () => {
     assert.equal(dest.height, PLAYLIST_COVER_EXPORT_HEIGHT)
   })
 
-  it('letterboxes a taller-than-frame image at zoom 1 so the full source is visible', () => {
-    const dest = coverDestRect(500, 1200, FRAME)
-    assert.equal(dest.height, PLAYLIST_COVER_EXPORT_HEIGHT)
-    assert.ok(dest.width < PLAYLIST_COVER_EXPORT_WIDTH)
-    assert.ok(dest.x > 0)
-    assert.equal(dest.y, 0)
-    assert.equal(Math.round(dest.x * 2 + dest.width), PLAYLIST_COVER_EXPORT_WIDTH)
+  function assertFillsFrame(dest: { x: number, y: number, width: number, height: number }) {
+    assert.ok(dest.x <= 0.001, `x ${dest.x}`)
+    assert.ok(dest.y <= 0.001, `y ${dest.y}`)
+    assert.ok(dest.x + dest.width >= PLAYLIST_COVER_EXPORT_WIDTH - 0.001)
+    assert.ok(dest.y + dest.height >= PLAYLIST_COVER_EXPORT_HEIGHT - 0.001)
+  }
+
+  it('never letterboxes: tall, square, and wide sources all fill the frame at zoom 1', () => {
+    for (const [w, h] of [[500, 1200], [700, 700], [1600, 900], [100, 3000], [3000, 100]] as const) {
+      assertFillsFrame(coverDestRect(w, h, FRAME))
+    }
   })
 
-  it('pillarboxes a square at zoom 1 instead of cropping top and bottom', () => {
+  it('crops the overflowing axis of a square at zoom 1, centered', () => {
     const dest = coverDestRect(700, 700, FRAME)
-    assert.equal(dest.width, PLAYLIST_COVER_EXPORT_WIDTH)
-    assert.ok(dest.height < PLAYLIST_COVER_EXPORT_HEIGHT)
-    assert.equal(dest.x, 0)
-    assert.ok(dest.y > 0)
+    assert.equal(Math.round(dest.height), PLAYLIST_COVER_EXPORT_HEIGHT)
+    assert.ok(dest.width > PLAYLIST_COVER_EXPORT_WIDTH)
+    assert.equal(Math.round(dest.x * 2 + dest.width), PLAYLIST_COVER_EXPORT_WIDTH)
+    assert.ok(Math.abs(dest.y) < 1e-9)
   })
 
-  it('fills the frame at cover-fit zoom', () => {
-    const zoom = coverFitZoom(700, 700)
-    const dest = coverDestRect(700, 700, { zoom, panX: 0, panY: 0 })
-    assert.ok(dest.height >= PLAYLIST_COVER_EXPORT_HEIGHT - 0.5)
-    assert.ok(dest.width >= PLAYLIST_COVER_EXPORT_WIDTH - 0.5)
-    assert.ok(dest.x <= 0)
-    assert.ok(Math.abs(dest.y) < 0.5)
+  it('cover-fit zoom is the base zoom', () => {
+    assert.equal(coverFitZoom(700, 700), 1)
   })
 
   it('grows the dest rect when zooming in', () => {
@@ -66,11 +65,20 @@ describe('playlistCoverCrop', () => {
     assert.equal(Math.round(zoomed.height), Math.round(full.height * 2))
   })
 
-  it('ignores pan while the image is fully inside the frame', () => {
-    const center = coverDestRect(700, 700, FRAME)
-    const panned = coverDestRect(700, 700, { zoom: 1, panX: -1, panY: 1 })
-    assert.equal(panned.x, center.x)
-    assert.equal(panned.y, center.y)
+  it('still fills the frame at any pan and zoom', () => {
+    for (const zoom of [1, 1.7, 4]) {
+      for (const pan of [-1, 0, 1]) {
+        assertFillsFrame(coverDestRect(1600, 900, { zoom, panX: pan, panY: pan }))
+        assertFillsFrame(coverDestRect(500, 1200, { zoom, panX: pan, panY: pan }))
+      }
+    }
+  })
+
+  it('ignores pan on an axis with no overflow', () => {
+    const exact = coverDestRect(PLAYLIST_COVER_EXPORT_WIDTH, PLAYLIST_COVER_EXPORT_HEIGHT, FRAME)
+    const panned = coverDestRect(PLAYLIST_COVER_EXPORT_WIDTH, PLAYLIST_COVER_EXPORT_HEIGHT, { zoom: 1, panX: -1, panY: 1 })
+    assert.equal(panned.x, exact.x)
+    assert.equal(panned.y, exact.y)
   })
 
   it('clamps pan so a cover-fit crop stays in frame', () => {
