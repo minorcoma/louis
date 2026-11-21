@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { buildSavePlan, EMPTY_CARD_DETAIL, playlistSaveExtractsYoutube } from './buildSavePlan.ts'
 import { applySourceTrimAndSplit, expandUnsplitTrack } from './splitTrack.ts'
+import { YOTO_MYO_SPLIT_TRACK_SECONDS } from './yotoMyoLimits.ts'
 import type { PlaylistTrack } from './types.ts'
 
 function youtubeTrack(overrides: Partial<PlaylistTrack> = {}): PlaylistTrack {
@@ -194,6 +195,7 @@ describe('split YouTube groups', () => {
       baseline[0]!,
       { startSeconds: 120, endSeconds: 3120 },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.equal(collapsed.length, 1)
     assert.equal(collapsed[0]?.yotoReuse, undefined)
@@ -241,7 +243,7 @@ describe('split YouTube groups', () => {
         display: { icon16x16: null },
       },
     })
-    const parts = expandUnsplitTrack(existing, 7200)
+    const parts = expandUnsplitTrack(existing, 7200, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(parts)
     assert.equal(parts.length, 3)
     assert.equal(playlistSaveExtractsYoutube([existing], parts, null), true)

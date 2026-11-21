@@ -36,6 +36,7 @@ import {
   runAudioCacheSweep,
   type AudioCacheMode,
 } from './audio-work-dir'
+import { currentAudioBitrate } from './save-audio-settings.ts'
 import { resolveYtdlpCookiesArgs } from './ytdlp-cookies'
 import { ytdlpJsRuntimeArgs } from './ytdlp-js-runtime'
 import { checkYoutubeVideoAvailability } from './youtube'
@@ -183,6 +184,21 @@ async function hashFile(filePath: string): Promise<string> {
   })
 }
 
+function saveCacheFilename(youtubeId: string, bitrate: string): string {
+  return `${youtubeId}.${bitrate}.m4a`
+}
+
+async function findNamedCache(cacheDir: string, filename: string): Promise<string | null> {
+  const full = path.join(cacheDir, filename)
+  try {
+    const fileStat = await stat(full)
+    return fileStat.size > 0 ? full : null
+  }
+  catch {
+    return null
+  }
+}
+
 async function findCachedFile(
   cacheDir: string,
   youtubeId: string,
@@ -221,7 +237,7 @@ function buildYtdlpArgs(options: {
     '-o', options.outputTemplate,
   ]
   if (options.transcode) {
-    args.splice(2, 0, '-x', '--audio-format', 'm4a')
+    args.splice(2, 0, '-x', '--audio-format', 'm4a', '--audio-quality', currentAudioBitrate().toUpperCase())
   }
   // YouTube EJS challenges — desktop passes `node:<Electron shim>` (GUI PATH has no node).
   args.push(...(options.jsRuntimeArgs?.length ? options.jsRuntimeArgs : ['--js-runtimes', 'node']))
@@ -330,8 +346,10 @@ async function downloadYoutubeAudioInternal(
   const cacheDir = getCacheDir(audioWorkDir, cacheMode)
   await mkdir(cacheDir, { recursive: true })
 
-  const requiredExt = options.transcode ? '.m4a' : undefined
-  const cached = await findCachedFile(cacheDir, youtubeId, requiredExt)
+  const bitrate = options.transcode ? currentAudioBitrate() : undefined
+  const cached = options.transcode
+    ? await findNamedCache(cacheDir, saveCacheFilename(youtubeId, bitrate!))
+    : await findCachedFile(cacheDir, youtubeId)
   if (cached) {
     const fileStat = await stat(cached)
     if (!options.enforceMyoSizeLimit || fileStat.size <= MAX_FILE_BYTES) {
@@ -351,7 +369,9 @@ async function downloadYoutubeAudioInternal(
     await rm(cached, { force: true })
   }
 
-  const flightKey = `${cacheMode}:${youtubeId}`
+  const flightKey = options.transcode
+    ? `${cacheMode}:${bitrate}:${youtubeId}`
+    : `${cacheMode}:${youtubeId}`
   const existing = inFlightDownloads.get(flightKey)
   if (existing) {
     console.info(`[yt-dlp] coalesce videoId=${youtubeId} mode=${cacheMode}`)
@@ -398,8 +418,9 @@ async function tryReusePreviewForSave(
     ?? await findCachedFile(getCacheDir(audioWorkDir, 'preview'), youtubeId)
   if (!previewPath) return null
 
-  const destPath = path.join(saveCacheDir, `${youtubeId}.m4a`)
-  const result = await materializeSaveM4aFromPreview({ previewPath, destPath })
+  const bitrate = currentAudioBitrate()
+  const destPath = path.join(saveCacheDir, saveCacheFilename(youtubeId, bitrate))
+  const result = await materializeSaveM4aFromPreview({ previewPath, destPath, bitrate })
   if (!result) {
     emitPipelineEvent('ytdlp.preview_remux', {
       videoId: youtubeId,
@@ -461,8 +482,9 @@ async function downloadYoutubeAudioUncached(
   const ytdlp = await resolveYtdlpBinary(event)
 
   // Re-check cache after winning the singleflight race (coalesced waiters already returned).
-  const requiredExt = options.transcode ? '.m4a' : undefined
-  const cached = await findCachedFile(cacheDir, youtubeId, requiredExt)
+  const cached = options.transcode
+    ? await findNamedCache(cacheDir, saveCacheFilename(youtubeId, currentAudioBitrate()))
+    : await findCachedFile(cacheDir, youtubeId)
   if (cached) {
     const fileStat = await stat(cached)
     if (!options.enforceMyoSizeLimit || fileStat.size <= MAX_FILE_BYTES) {
@@ -697,7 +719,10 @@ async function downloadYoutubeAudioUncached(
           )
         }
 
-        const cachePath = path.join(cacheDir, audioFile)
+        const cacheName = options.transcode
+          ? saveCacheFilename(youtubeId, currentAudioBitrate())
+          : audioFile
+        const cachePath = path.join(cacheDir, cacheName)
         await readFile(filePath)
         try {
           await copyFile(filePath, cachePath)
@@ -734,7 +759,7 @@ async function downloadYoutubeAudioUncached(
 
         return {
           filePath: cachePath,
-          filename: audioFile,
+          filename: cacheName,
           sha256: await hashFile(cachePath),
           fromCache: false,
           recoveredFromRetryableFailure: recoveredFromRetryableFailure || undefined,

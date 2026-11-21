@@ -1,4 +1,11 @@
 import { computed, readonly, ref } from 'vue'
+import { normalizeAudioBitrate, DEFAULT_AUDIO_BITRATE, type AudioBitrate } from '#shared/audioEncode'
+import {
+  DEFAULT_SPLIT_TARGET_MINUTES,
+  normalizeSplitTargetMinutes,
+  setSplitTargetSeconds,
+} from '#shared/myo-editor/splitTarget'
+import { YOTO_MYO_SPLIT_TRACK_SECONDS } from '#shared/myo-editor/yotoMyoLimits'
 
 const STORAGE_KEY = 'yoto-cards:user-preferences'
 
@@ -10,6 +17,10 @@ type StoredPrefs = {
   drawEditorSounds?: boolean
   /** Icons tab grid size in the track art editor. Absent = 32. */
   trackArtIconSize?: 32 | 64
+  /** Split length in minutes. Absent = 15. */
+  splitTargetMinutes?: number
+  /** AAC bitrate such as `96k`. Absent = Standard. */
+  audioBitrate?: string
 }
 
 const showDebugPanelStored = ref<boolean | null>(null)
@@ -17,6 +28,8 @@ const showDebugPanelStored = ref<boolean | null>(null)
 const searchPlaceholdersStored = ref<string[] | null>(null)
 const drawEditorSoundsStored = ref<boolean | null>(null)
 const trackArtIconSizeStored = ref<32 | 64 | null>(null)
+const splitTargetMinutesStored = ref<number | null>(null)
+const audioBitrateStored = ref<AudioBitrate | null>(null)
 
 let initialized = false
 
@@ -48,6 +61,12 @@ function persist() {
   if (trackArtIconSizeStored.value !== null) {
     toSave.trackArtIconSize = trackArtIconSizeStored.value
   }
+  if (splitTargetMinutesStored.value !== null) {
+    toSave.splitTargetMinutes = splitTargetMinutesStored.value
+  }
+  if (audioBitrateStored.value !== null) {
+    toSave.audioBitrate = audioBitrateStored.value
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
 
@@ -66,6 +85,17 @@ function ensureInitialized() {
   }
   if (stored.trackArtIconSize === 32 || stored.trackArtIconSize === 64) {
     trackArtIconSizeStored.value = stored.trackArtIconSize
+  }
+  const splitMinutes = normalizeSplitTargetMinutes(stored.splitTargetMinutes)
+  splitTargetMinutesStored.value = typeof stored.splitTargetMinutes === 'number'
+    ? splitMinutes
+    : null
+  setSplitTargetSeconds(
+    (splitTargetMinutesStored.value ?? DEFAULT_SPLIT_TARGET_MINUTES) * 60,
+    YOTO_MYO_SPLIT_TRACK_SECONDS,
+  )
+  if (typeof stored.audioBitrate === 'string') {
+    audioBitrateStored.value = normalizeAudioBitrate(stored.audioBitrate)
   }
 }
 
@@ -130,6 +160,26 @@ export function useUserPreferences() {
     persist()
   }
 
+  const splitTargetMinutes = computed(() =>
+    splitTargetMinutesStored.value ?? DEFAULT_SPLIT_TARGET_MINUTES,
+  )
+
+  const splitTargetSeconds = computed(() => splitTargetMinutes.value * 60)
+
+  function setSplitTargetMinutes(value: number) {
+    const minutes = normalizeSplitTargetMinutes(value)
+    splitTargetMinutesStored.value = minutes
+    setSplitTargetSeconds(minutes * 60, YOTO_MYO_SPLIT_TRACK_SECONDS)
+    persist()
+  }
+
+  const audioBitrate = computed(() => audioBitrateStored.value ?? DEFAULT_AUDIO_BITRATE)
+
+  function setAudioBitrate(value: string) {
+    audioBitrateStored.value = normalizeAudioBitrate(value)
+    persist()
+  }
+
   return {
     showDebugPanel,
     searchPlaceholders: readonly(searchPlaceholders),
@@ -140,5 +190,10 @@ export function useUserPreferences() {
     setDrawEditorSounds,
     trackArtIconSize: readonly(trackArtIconSize),
     setTrackArtIconSize,
+    splitTargetMinutes: readonly(splitTargetMinutes),
+    splitTargetSeconds: readonly(splitTargetSeconds),
+    setSplitTargetMinutes,
+    audioBitrate: readonly(audioBitrate),
+    setAudioBitrate,
   }
 }

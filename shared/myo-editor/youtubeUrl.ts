@@ -121,6 +121,25 @@ export function parseYoutubeChannelUrl(value: string): Extract<YoutubeSearchInte
   return null
 }
 
+export type YoutubeSearchAction = {
+  kind: 'add-video' | 'add-playlist' | 'search' | 'clear'
+  label: string
+  ariaLabel: string
+}
+
+/** Button for the search field: a video or playlist URL adds immediately. */
+export function youtubeSearchAction(query: string, clearable: boolean): YoutubeSearchAction {
+  const intent = classifyYoutubeSearchInput(query)
+  if (intent.kind === 'video') {
+    return { kind: 'add-video', label: 'Add', ariaLabel: 'Add this video' }
+  }
+  if (intent.kind === 'playlist') {
+    return { kind: 'add-playlist', label: 'Add all', ariaLabel: 'Add every track in this playlist' }
+  }
+  if (clearable) return { kind: 'clear', label: 'Clear', ariaLabel: 'Clear search' }
+  return { kind: 'search', label: 'Search', ariaLabel: 'Search' }
+}
+
 export function classifyYoutubeSearchInput(value: string): YoutubeSearchIntent {
   const q = value.trim()
   if (!q) return { kind: 'text', q: '' }

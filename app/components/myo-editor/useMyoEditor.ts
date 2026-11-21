@@ -148,6 +148,7 @@ export interface MyoEditorContext {
   selectCard: (card: YotoMyoCard) => Promise<void>
   startNewPlaylist: () => boolean
   queuePendingCreateTracks: (tracks: PlaylistTrack[]) => void
+  appendPendingCreateTracks: (tracks: PlaylistTrack[]) => void
   pendingCreateTrackCount: ComputedRef<number>
   confirmNewPlaylistName: (title: string) => Promise<boolean>
   appendTracks: (tracks: PlaylistTrack[]) => InsertTracksResult
@@ -276,6 +277,7 @@ function clearProgressTracking(cardId: string) {
 
 export function useMyoEditor(options: UseMyoEditorOptions = {}) {
   const { playEvent } = useUiSound()
+  const { audioBitrate, splitTargetSeconds } = useUserPreferences()
   const selectedCardId = ref<string | null>(null)
   const isNewPlaylist = ref(false)
   const createOutcomeUncertain = ref(false)
@@ -829,6 +831,8 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
             cardTitle: snapshot.cardTitle,
             acknowledgeCapacityRisk: options?.acknowledgeCapacityRisk === true,
             normalizeVolume: options?.normalizeVolume === true,
+            audioBitrate: audioBitrate.value,
+            splitTargetSeconds: splitTargetSeconds.value,
           },
         },
       )
@@ -988,6 +992,10 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
 
   function queuePendingCreateTracks(tracks: PlaylistTrack[]) {
     pendingCreateTracks.value = clonePlaylist(tracks)
+  }
+
+  function appendPendingCreateTracks(tracks: PlaylistTrack[]) {
+    pendingCreateTracks.value = [...pendingCreateTracks.value, ...clonePlaylist(tracks)]
   }
 
   function startNewPlaylist(): boolean {
@@ -1875,6 +1883,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
     selectCard,
     startNewPlaylist,
     queuePendingCreateTracks,
+    appendPendingCreateTracks,
     pendingCreateTrackCount,
     confirmNewPlaylistName,
     appendTracks,

@@ -11,6 +11,10 @@ interface SaveRequestBody {
   acknowledgeCapacityRisk?: boolean
   /** Level new YouTube extracts with ffmpeg loudnorm before upload. */
   normalizeVolume?: boolean
+  /** AAC bitrate preset, for example `96k`. Omitted uses Standard. */
+  audioBitrate?: string
+  /** Chapter length in seconds. Omitted uses 15 minutes. */
+  splitTargetSeconds?: number
 }
 
 export default defineEventHandler(async (event) => {
@@ -41,7 +45,12 @@ export default defineEventHandler(async (event) => {
     body.playlist,
     body.cardTitle?.trim() || 'Playlist',
     Array.isArray(body.baselinePlaylist) ? body.baselinePlaylist : [],
-    { acknowledgeCapacityRisk: body.acknowledgeCapacityRisk === true, normalizeVolume: body.normalizeVolume === true },
+    {
+      acknowledgeCapacityRisk: body.acknowledgeCapacityRisk === true,
+      normalizeVolume: body.normalizeVolume === true,
+      audioBitrate: body.audioBitrate,
+      splitTargetSeconds: body.splitTargetSeconds,
+    },
   )
 
   return { jobId: job.id, status: job.status }

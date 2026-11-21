@@ -121,7 +121,7 @@ describe('getPlaylistPreflightLimitError', () => {
       ...Array.from({ length: 98 }, (_, i) => track({ id: `t${i}`, title: `T${i}` })),
       track({ id: 'album', title: 'Album', duration: 2 * 60 * 60 }),
     ]
-    assert.equal(projectedPlaylistTrackCount(playlist), 101)
+    assert.equal(projectedPlaylistTrackCount(playlist), 106)
     assert.equal(getPlaylistPreflightLimitError(playlist), YOTO_MYO_TRACK_COUNT_MESSAGE)
     assert.equal(YOTO_MYO_SPLIT_TRACK_SECONDS, 55 * 60)
   })

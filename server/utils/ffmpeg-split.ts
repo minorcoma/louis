@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { currentAudioBitrate } from './save-audio-settings.ts'
 
 const execFileAsync = promisify(execFile)
-const AAC_BITRATE = '128k'
 const AAC_SAMPLE_RATE = '44100'
 
 export const FFMPEG_TIMEOUT_FLOOR_MS = 10 * 60 * 1000
@@ -83,7 +83,7 @@ function aacSplitArgs(
     '-i', sourcePath,
     '-t', String(duration),
     '-c:a', 'aac',
-    '-b:a', AAC_BITRATE,
+    '-b:a', currentAudioBitrate(),
     '-ar', AAC_SAMPLE_RATE,
     '-ac', '2',
     destPath,

@@ -11,6 +11,10 @@ interface CreateSaveRequestBody {
   acknowledgeCapacityRisk?: boolean
   /** Level new YouTube extracts with ffmpeg loudnorm before upload. */
   normalizeVolume?: boolean
+  /** AAC bitrate preset, for example `96k`. Omitted uses Standard. */
+  audioBitrate?: string
+  /** Chapter length in seconds. Omitted uses 15 minutes. */
+  splitTargetSeconds?: number
 }
 
 export default defineEventHandler(async (event) => {
@@ -41,6 +45,8 @@ export default defineEventHandler(async (event) => {
     {
       acknowledgeCapacityRisk: body?.acknowledgeCapacityRisk === true,
       normalizeVolume: body?.normalizeVolume === true,
+      audioBitrate: body?.audioBitrate,
+      splitTargetSeconds: body?.splitTargetSeconds,
     },
   )
 

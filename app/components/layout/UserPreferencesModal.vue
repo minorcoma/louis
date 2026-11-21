@@ -10,6 +10,8 @@ import {
   YOUTUBE_SAFE_SEARCH_DEFAULT,
   type YoutubeSafeSearch,
 } from '#shared/youtubeSafeSearch'
+import { AUDIO_QUALITY_PRESETS } from '#shared/audioEncode'
+import { SPLIT_TARGET_CHOICES_MINUTES } from '#shared/myo-editor/splitTarget'
 
 type PrefsNav = 'general' | 'advanced'
 
@@ -21,6 +23,10 @@ const {
   searchPlaceholdersText,
   setShowDebugPanel,
   setSearchPlaceholdersFromText,
+  splitTargetMinutes,
+  setSplitTargetMinutes,
+  audioBitrate,
+  setAudioBitrate,
 } = useUserPreferences()
 const { isDesktop, desktopPrefsDebug, getConfig, setConfig, getRedirectUri } = useDesktopHost()
 const { open: shellOpen } = usePreferencesShell()
@@ -119,6 +125,17 @@ function onFlyoutClose() {
 function finishClose() {
   open.value = false
   shellOpen.value = false
+}
+
+function onSplitLengthChange(event: Event) {
+  const value = Number((event.target as HTMLSelectElement).value)
+  setSplitTargetMinutes(value)
+  playEvent('buttonClick')
+}
+
+function onAudioQualityChange(event: Event) {
+  setAudioBitrate((event.target as HTMLSelectElement).value)
+  playEvent('buttonClick')
 }
 
 function toggleSounds() {
@@ -282,6 +299,56 @@ watch(shellOpen, (isOpen) => {
                       </span>
                       <span class="maru-switch__thumb" aria-hidden="true" />
                     </button>
+                  </div>
+
+                  <div class="prefs-projector__field">
+                    <label
+                      class="prefs-projector__label"
+                      for="prefs-split-length"
+                    >Split length</label>
+                    <select
+                      id="prefs-split-length"
+                      class="prefs-projector__select"
+                      :value="String(splitTargetMinutes)"
+                      :disabled="!formInteractive"
+                      @change="onSplitLengthChange"
+                    >
+                      <option
+                        v-for="minutes in SPLIT_TARGET_CHOICES_MINUTES"
+                        :key="minutes"
+                        :value="String(minutes)"
+                      >
+                        {{ minutes }} minutes
+                      </option>
+                    </select>
+                    <p class="prefs-projector__hint">
+                      Long videos are cut into even parts around this length. A short leftover is folded in, so you don't end up with a 2-minute stub. No part runs past 55 minutes.
+                    </p>
+                  </div>
+
+                  <div class="prefs-projector__field">
+                    <label
+                      class="prefs-projector__label"
+                      for="prefs-audio-quality"
+                    >Audio quality</label>
+                    <select
+                      id="prefs-audio-quality"
+                      class="prefs-projector__select"
+                      :value="audioBitrate"
+                      :disabled="!formInteractive"
+                      @change="onAudioQualityChange"
+                    >
+                      <option
+                        v-for="preset in AUDIO_QUALITY_PRESETS"
+                        :key="preset.id"
+                        :value="preset.bitrate"
+                      >
+                        {{ preset.label }} ({{ preset.bitrate }})
+                      </option>
+                    </select>
+                    <p class="prefs-projector__hint">
+                      Standard is the default and keeps a chapter under Yoto’s 100 MB limit. High is the previous setting, and long tracks saved that way can be rejected.
+                    </p>
                   </div>
 
                   <div class="prefs-projector__field">

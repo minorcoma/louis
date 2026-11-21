@@ -25,9 +25,12 @@ import {
   getTrackCountLimitError,
   getTrackMediaLimitError,
   withMappedYotoLimitError,
+  YOTO_MYO_SPLIT_TRACK_SECONDS,
 } from '#shared/myo-editor/yotoMyoLimits'
 import { hostDiskFullMessageIfMatch } from '#shared/hostDiskFull'
+import { normalizeSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
 import { downloadYoutubeAudio } from './youtube-download'
+import { withSaveAudioSettings } from './save-audio-settings'
 import { hashFileSha256, pollPutAudioTranscode, putAudioForTranscode } from './yoto-media'
 import { loudnormAudioFile } from './ffmpeg-loudnorm'
 import { probeAudioDurationSeconds, splitAudioFile } from './ffmpeg-split'
@@ -146,7 +149,12 @@ export function startSaveJob(
   playlist: PlaylistTrack[],
   cardTitle: string,
   baselinePlaylist: PlaylistTrack[],
-  options?: { acknowledgeCapacityRisk?: boolean, normalizeVolume?: boolean },
+  options?: {
+    acknowledgeCapacityRisk?: boolean
+    normalizeVolume?: boolean
+    audioBitrate?: unknown
+    splitTargetSeconds?: unknown
+  },
 ): SaveJobState {
   if (target.operation === 'update') {
     const existing = findActiveJobForCard(target.cardId)
@@ -156,6 +164,11 @@ export function startSaveJob(
   const jobId = crypto.randomUUID()
   const acknowledgeCapacityRisk = options?.acknowledgeCapacityRisk === true
   const normalizeVolume = options?.normalizeVolume === true
+  const splitTargetSeconds = normalizeSplitTargetSeconds(
+    options?.splitTargetSeconds,
+    YOTO_MYO_SPLIT_TRACK_SECONDS,
+  )
+  const audioBitrate = options?.audioBitrate
   const job: SaveJobState = {
     id: jobId,
     operation: target.operation,
@@ -184,7 +197,7 @@ export function startSaveJob(
     })
     try {
       const accessToken = await getYotoAccessToken(event)
-      const outcome = await runSaveJob(
+      const outcome = await withSaveAudioSettings({ audioBitrate, splitTargetSeconds }, () => runSaveJob(
         event,
         accessToken,
         jobId,
@@ -194,7 +207,8 @@ export function startSaveJob(
         baselinePlaylist,
         acknowledgeCapacityRisk,
         normalizeVolume,
-      )
+        splitTargetSeconds,
+      ))
       const latest = jobs.get(jobId)
       if (outcome === 'complete') {
         emitPipelineEvent('save.job.complete', {
@@ -246,6 +260,7 @@ async function runSaveJob(
   baselinePlaylist: PlaylistTrack[],
   acknowledgeCapacityRisk: boolean,
   normalizeVolume: boolean,
+  splitTargetSeconds: number,
 ): Promise<'complete' | 'failed'> {
   const job = jobs.get(jobId)
   if (!job) return 'failed'
@@ -368,7 +383,7 @@ async function runSaveJob(
 
     function replanFromProbedDurations() {
       const previous = workingPlaylist
-      const replanned = applyProbedDurations(workingPlaylist, durationByYoutubeId)
+      const replanned = applyProbedDurations(workingPlaylist, durationByYoutubeId, splitTargetSeconds)
       const didReplan = replanned.length !== previous.length
         || replanned.some((track, index) => {
           const prev = previous[index]

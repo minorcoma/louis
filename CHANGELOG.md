@@ -9,6 +9,11 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 
 ## [Unreleased]
 
+### Added
+- Paste a YouTube video link and choose **Add**, or a playlist link and choose **Add all**. Add all pages through the playlist (up to Yoto’s 100 tracks) and drops the tracks into the open playlist, or asks you to name a new one.
+- **Settings → General → Split length** (default 15 minutes). Long videos are cut into even parts around that length. A short leftover is folded into the other parts, so a track is not left as a 2-minute stub. Parts still stop at 55 minutes.
+- **Settings → General → Audio quality** (default Standard, 96 kbps). Saves are re-encoded at that bitrate instead of copying YouTube’s file, which was landing over 100 MB and getting rejected. High is the old 192 kbps setting.
+
 ### Fixed
 - Home Assistant no longer drops the Louis repository. `youtube_safe_search` was a nested `name` / `select` map, which Supervisor reads as more options and then rejects, so the app never appeared in the store. The option is now `list(none|moderate|strict)`, with the label in `translations/en.yaml`.
 - Track Art stays on screen on a phone when the track title is long. The full-size flyout's grid column was growing to the nowrap title, which pushed the panel past the viewport and left Apply unreachable.

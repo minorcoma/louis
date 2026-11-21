@@ -1,4 +1,5 @@
 import type { PlaylistTrack } from './types'
+import { evenSplitCount, getSplitTargetSeconds } from './splitTarget.ts'
 import { trimmedDurationSeconds } from './trackTrim.ts'
 
 /** Official Yoto playlist capacity (support.yotoplay.com). */
@@ -27,11 +28,11 @@ export function getTrackCountLimitError(count: number): string | null {
 }
 
 /** How many MYO chapters a duration becomes after auto-split. Split rows already count as 1. */
-export function splitPartCountForDuration(durationSeconds: number): number {
-  if (!Number.isFinite(durationSeconds) || durationSeconds <= YOTO_MYO_SPLIT_TRACK_SECONDS) {
-    return 1
-  }
-  return Math.max(2, Math.ceil(durationSeconds / YOTO_MYO_SPLIT_TRACK_SECONDS))
+export function splitPartCountForDuration(
+  durationSeconds: number,
+  targetSeconds: number = getSplitTargetSeconds(),
+): number {
+  return evenSplitCount(durationSeconds, targetSeconds, YOTO_MYO_SPLIT_TRACK_SECONDS)
 }
 
 export function projectedTrackSlots(track: PlaylistTrack): number {

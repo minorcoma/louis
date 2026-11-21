@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { ffmpegTimeoutMs } from './ffmpeg-split.ts'
 import { emitPipelineEvent } from './pipeline-log.ts'
+import { currentAudioBitrate } from './save-audio-settings.ts'
 
 const execFileAsync = promisify(execFile)
 
@@ -132,6 +133,8 @@ export async function loudnormAudioFile(
         '-y',
         '-i', sourcePath,
         '-af', secondPassLoudnormFilter(measured),
+        '-c:a', 'aac',
+        '-b:a', currentAudioBitrate(),
         destPath,
       ],
       { timeout },

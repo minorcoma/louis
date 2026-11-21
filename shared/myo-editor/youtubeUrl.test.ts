@@ -4,6 +4,7 @@ import {
   classifyYoutubeSearchInput,
   extractYoutubeIdFromUrl,
   parseYoutubeChannelUrl,
+  youtubeSearchAction,
 } from './youtubeUrl.ts'
 
 describe('extractYoutubeIdFromUrl', () => {
@@ -92,5 +93,20 @@ describe('classifyYoutubeSearchInput', () => {
       classifyYoutubeSearchInput('lofi hip hop'),
       { kind: 'text', q: 'lofi hip hop' },
     )
+  })
+})
+
+describe('youtubeSearchAction', () => {
+  it('offers Add for a video URL and Add all for a playlist URL', () => {
+    assert.equal(
+      youtubeSearchAction('https://youtu.be/dQw4w9wgGcQ', false).kind,
+      'add-video',
+    )
+    assert.equal(
+      youtubeSearchAction('https://www.youtube.com/playlist?list=PL1234567890', true).kind,
+      'add-playlist',
+    )
+    assert.equal(youtubeSearchAction('lofi', false).label, 'Search')
+    assert.equal(youtubeSearchAction('lofi', true).label, 'Clear')
   })
 })

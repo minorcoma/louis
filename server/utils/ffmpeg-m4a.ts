@@ -3,9 +3,9 @@ import { copyFile, mkdir, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
 import { ffmpegTimeoutMs } from './ffmpeg-split.ts'
+import { currentAudioBitrate } from './save-audio-settings.ts'
 
 const execFileAsync = promisify(execFile)
-const REMUX_AAC_BITRATE = '192k'
 const AAC_SAMPLE_RATE = '44100'
 const PREVIEW_M4A_COPY_EXTS = new Set(['.m4a', '.aac', '.mp4'])
 
@@ -15,14 +15,18 @@ export function canCopyPreviewAsM4a(filename: string): boolean {
 }
 
 /** Match yt-dlp `-x --audio-format m4a` (AAC in an M4A container) without another YouTube hit. */
-export function previewToSaveM4aArgs(sourcePath: string, destPath: string): string[] {
+export function previewToSaveM4aArgs(
+  sourcePath: string,
+  destPath: string,
+  bitrate: string = currentAudioBitrate(),
+): string[] {
   return [
     '-hide_banner',
     '-nostats',
     '-y',
     '-i', sourcePath,
     '-c:a', 'aac',
-    '-b:a', REMUX_AAC_BITRATE,
+    '-b:a', bitrate,
     '-ar', AAC_SAMPLE_RATE,
     '-ac', '2',
     destPath,
@@ -32,12 +36,17 @@ export function previewToSaveM4aArgs(sourcePath: string, destPath: string): stri
 export async function materializeSaveM4aFromPreview(options: {
   previewPath: string
   destPath: string
+  /**
+   * When set, always re-encode at this bitrate. Copying a YouTube m4a keeps
+   * the source bitrate, and those files can land over Yoto's 100 MB cap.
+   */
+  bitrate?: string
 }): Promise<{ destPath: string, copied: boolean } | null> {
   const previewStat = await stat(options.previewPath).catch(() => null)
   if (!previewStat || previewStat.size <= 0) return null
 
   await mkdir(path.dirname(options.destPath), { recursive: true })
-  const copied = canCopyPreviewAsM4a(options.previewPath)
+  const copied = !options.bitrate && canCopyPreviewAsM4a(options.previewPath)
 
   try {
     if (copied) {
@@ -49,7 +58,7 @@ export async function materializeSaveM4aFromPreview(options: {
       if (!ffmpeg) return null
       await execFileAsync(
         ffmpeg,
-        previewToSaveM4aArgs(options.previewPath, options.destPath),
+        previewToSaveM4aArgs(options.previewPath, options.destPath, options.bitrate),
         { timeout: ffmpegTimeoutMs() },
       )
     }

@@ -49,13 +49,13 @@ function track(partial: Partial<PlaylistTrack> & Pick<PlaylistTrack, 'id'>): Pla
 
 describe('planTrackSplit', () => {
   it('does not split at the 55-minute threshold', () => {
-    assert.equal(planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS), null)
-    assert.equal(planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS - 1), null)
+    assert.equal(planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS, YOTO_MYO_SPLIT_TRACK_SECONDS), null)
+    assert.equal(planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS - 1, YOTO_MYO_SPLIT_TRACK_SECONDS), null)
     assert.equal(planTrackSplit(0), null)
   })
 
   it('splits 3301 seconds into two equal-ish parts', () => {
-    const plan = planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS + 1)
+    const plan = planTrackSplit(YOTO_MYO_SPLIT_TRACK_SECONDS + 1, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(plan)
     assert.equal(plan.count, 2)
     assert.equal(plan.parts.length, 2)
@@ -70,7 +70,7 @@ describe('planTrackSplit', () => {
   })
 
   it('splits 7200 seconds into three equal parts', () => {
-    const plan = planTrackSplit(7200)
+    const plan = planTrackSplit(7200, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(plan)
     assert.equal(plan.count, 3)
     assert.deepEqual(plan.parts, [
@@ -95,7 +95,7 @@ describe('planTrackSplit', () => {
   })
 
   it('splits a full 60-minute track because it sits above the 55-minute threshold', () => {
-    const plan = planTrackSplit(YOTO_MYO_MAX_TRACK_SECONDS)
+    const plan = planTrackSplit(YOTO_MYO_MAX_TRACK_SECONDS, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(plan)
     assert.equal(plan.count, 2)
     assert.ok(plan.parts.every(part => part.duration <= YOTO_MYO_MAX_TRACK_SECONDS))
@@ -218,7 +218,7 @@ describe('scaleSplitParts / expandUnsplitTrack', () => {
       title: 'Bedtime',
       duration: 7200,
     })
-    const parts = expandUnsplitTrack(source, 7200)
+    const parts = expandUnsplitTrack(source, 7200, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(parts)
     assert.equal(parts.length, 3)
     assert.equal(parts[0]?.title, 'Bedtime (Part 1)')
@@ -232,6 +232,7 @@ describe('scaleSplitParts / expandUnsplitTrack', () => {
       [{ start: 0, duration: 1800 }, { start: 1800, duration: 1800 }],
       3600,
       8000,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.ok(stretched.replanned)
     assert.equal(stretched.replanned.count, 3)
@@ -247,7 +248,7 @@ describe('scaleSplitParts / expandUnsplitTrack', () => {
       title: 'Album',
       duration: 3600,
     })
-    const expanded = applyProbedDurations([unsplit], new Map([['album', 7200]]))
+    const expanded = applyProbedDurations([unsplit], new Map([['album', 7200]]), YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.equal(expanded.length, 3)
     assert.ok(expanded.every(item => (item.duration ?? 0) <= YOTO_MYO_MAX_TRACK_SECONDS))
 
@@ -263,7 +264,7 @@ describe('scaleSplitParts / expandUnsplitTrack', () => {
       title: 'Short (Part 2)',
       split: { groupId: 'short', index: 1, count: 2, startSeconds: 1800, durationSeconds: 1800 },
     })
-    const replanned = applyProbedDurations([p0, p1], new Map([['short', 8000]]))
+    const replanned = applyProbedDurations([p0, p1], new Map([['short', 8000]]), YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.equal(replanned.length, 3)
     assert.ok(replanned.every(item => (item.split?.durationSeconds ?? 0) <= YOTO_MYO_MAX_TRACK_SECONDS))
   })
@@ -332,11 +333,11 @@ describe('split completeness / insert / probe', () => {
     })
     const incoming = expandUnsplitTrack(incomingSource, 2 * 60 * 60)
     assert.ok(incoming)
-    assert.equal(incoming.length, 3)
-    assert.equal(projectedPlaylistTrackCount([...existing, incomingSource]), 101)
+    assert.equal(incoming.length, 8)
+    assert.equal(projectedPlaylistTrackCount([...existing, incomingSource]), 106)
     const result = selectIncomingTracks(existing, incoming)
     assert.equal(result.unique.length, 0)
-    assert.equal(result.overflow, 3)
+    assert.equal(result.overflow, 8)
   })
 
   it('fails closed without a probe on an unsplit long or unknown-duration extract', () => {
@@ -383,6 +384,7 @@ describe('applySourceTrimAndSplit', () => {
       source,
       { startSeconds: 120, endSeconds: 3120 },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.equal(rows.length, 1)
     assert.equal(rows[0]?.id, 'concert')
@@ -396,6 +398,7 @@ describe('applySourceTrimAndSplit', () => {
       source,
       { startSeconds: 600, endSeconds: 4800 },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.equal(rows.length, 2)
     assert.equal(rows[0]?.id, 'concert#p0')
@@ -416,9 +419,10 @@ describe('applySourceTrimAndSplit', () => {
       source,
       { startSeconds: 600, endSeconds: 4800 },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
-    const cleared = applySourceTrimAndSplit(trimmed[0]!, null, 5400)
-    const full = applySourceTrimAndSplit(source, null, 5400)
+    const cleared = applySourceTrimAndSplit(trimmed[0]!, null, 5400, YOTO_MYO_SPLIT_TRACK_SECONDS)
+    const full = applySourceTrimAndSplit(source, null, 5400, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.equal(cleared.length, full.length)
     assert.equal(cleared[0]?.trim, undefined)
     assert.equal(cleared[0]?.split?.startSeconds, 0)
@@ -431,6 +435,7 @@ describe('applySourceTrimAndSplit', () => {
       source,
       { startSeconds: 0, endSeconds: YOTO_MYO_SPLIT_TRACK_SECONDS },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.equal(rows.length, 1)
     assert.equal(rows[0]?.split, undefined)
@@ -447,6 +452,7 @@ describe('applySourceTrimAndSplit', () => {
       source,
       { startSeconds: keepStart, endSeconds: keepEnd },
       5400,
+      YOTO_MYO_SPLIT_TRACK_SECONDS,
     )
     assert.equal(rows.length, 2)
     assert.equal(rows[0]?.split?.startSeconds, keepStart)
@@ -463,7 +469,7 @@ describe('applySourceTrimAndSplit', () => {
       title: 'Bedtime',
       duration: 7200,
     })
-    const parts = expandUnsplitTrack(long, 7200)
+    const parts = expandUnsplitTrack(long, 7200, YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.ok(parts)
     assert.equal(parts.length, 3)
     assert.equal(parts[0]?.title, 'Bedtime (Part 1)')
@@ -507,7 +513,7 @@ describe('applyProbedDurations with source trim', () => {
         sourceDurationSeconds: 5400,
       },
     })
-    const next = applyProbedDurations([p0, p1], new Map([['album', 5460]]))
+    const next = applyProbedDurations([p0, p1], new Map([['album', 5460]]), YOTO_MYO_SPLIT_TRACK_SECONDS)
     assert.equal(next.length, 1)
     assert.equal(next[0]?.split, undefined)
     assert.ok(next[0]?.trim)

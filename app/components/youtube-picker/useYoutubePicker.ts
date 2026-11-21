@@ -14,6 +14,7 @@ import {
   type YoutubeChannelSummary,
 } from '#shared/myo-editor/youtubeUrl'
 import { videosToPlaylistTracks } from '~/components/playlist/types'
+import { YOTO_MYO_MAX_TRACKS } from '#shared/myo-editor/yotoMyoLimits'
 
 const MIN_SEARCH_LOADING_MS = 2000
 
@@ -165,6 +166,72 @@ export function useYoutubePicker(maxResults = 12) {
       await ensureMinLoadingTime(loadingStartedAt)
       if (generation !== searchGeneration) return
       status.value = 'error'
+    }
+  }
+
+  async function loadEntirePlaylist(playlistId: string, q: string): Promise<{
+    videos: YoutubeVideoSummary[]
+    title: string
+    truncated: boolean
+  } | null> {
+    searchGeneration += 1
+    const generation = searchGeneration
+    const loadingStartedAt = Date.now()
+    submittedQuery.value = q
+    status.value = 'loading'
+    errorMessage.value = ''
+    focusedIndex.value = -1
+    results.value = []
+    nextPageToken.value = undefined
+    playlistSummary.value = null
+    activePlaylistId.value = playlistId
+    skippedUnavailable.value = 0
+    skippedMissingDuration.value = 0
+    resetChannelState()
+    searchSource.value = 'playlist'
+    clearResultSelection()
+    playEvent('buttonClick')
+
+    const videos: YoutubeVideoSummary[] = []
+    let pageToken: string | undefined
+    let title = 'Playlist'
+    try {
+      for (let page = 0; page < 40; page++) {
+        const data = await fetchPlaylistPage(playlistId, pageToken)
+        if (generation !== searchGeneration) return null
+        if (data.playlist?.title) title = data.playlist.title
+        if (data.playlist) playlistSummary.value = data.playlist
+        const mapped = mapPlaylistImportItems(data.items)
+        skippedUnavailable.value += mapped.skippedUnavailable
+        skippedMissingDuration.value += mapped.skippedMissingDuration
+        videos.push(...mapped.videos)
+        pageToken = data.nextPageToken
+        if (!pageToken || videos.length >= YOTO_MYO_MAX_TRACKS) break
+      }
+      if (generation !== searchGeneration) return null
+
+      const truncated = videos.length > YOTO_MYO_MAX_TRACKS || Boolean(pageToken)
+      results.value = videos
+      nextPageToken.value = pageToken
+      precheckImportable(videos.slice(0, YOTO_MYO_MAX_TRACKS), true)
+      await ensureMinLoadingTime(loadingStartedAt)
+      if (generation !== searchGeneration) return null
+      status.value = 'idle'
+      return {
+        videos: videos.slice(0, YOTO_MYO_MAX_TRACKS),
+        title,
+        truncated,
+      }
+    }
+    catch (err: unknown) {
+      if (generation !== searchGeneration) return null
+      errorMessage.value = fetchErrorMessage(err, 'Playlist not found or not public')
+      results.value = []
+      resetPasteState()
+      await ensureMinLoadingTime(loadingStartedAt)
+      if (generation !== searchGeneration) return null
+      status.value = 'error'
+      return null
     }
   }
 
@@ -521,6 +588,7 @@ export function useYoutubePicker(maxResults = 12) {
     searchSource,
     toggleSelectAll,
     search,
+    loadEntirePlaylist,
     resetSearch,
     loadMore,
     selectVideo,

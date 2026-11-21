@@ -16,7 +16,7 @@ Louis edits **playlists**. Linking a playlist to a physical Make Your Own card s
 
 ### Auto long-track split
 
-~~When a YouTube source exceeds Yoto’s per-track duration cap (~1 hour), automatically split it into sequential playlist tracks (e.g. Part 1 / Part 2) on extract/save so long podcasts and albums still fit.~~ — **done**: sources over 55 minutes expand into connected playlist slats on add; save downloads once and ffmpeg-splits into MYO chapters.
+~~When a YouTube source exceeds Yoto’s per-track duration cap (~1 hour), automatically split it into sequential playlist tracks (e.g. Part 1 / Part 2) on extract/save so long podcasts and albums still fit.~~ — **done**: sources longer than the split length (Settings → General, default 15 minutes, hard cap 55) expand into connected playlist slats on add; save downloads once and ffmpeg-splits into MYO chapters.
 
 ### Home Assistant add-on
 
@@ -48,7 +48,7 @@ Louis edits **playlists**. Linking a playlist to a physical Make Your Own card s
 
 ### YouTube chapters → tracks
 
-Optional per-result toggle to expand YouTube chapters into separate playlist tracks. Must compose cleanly with auto 55-minute long-track splitting (same `split` time-range fields).
+Optional per-result toggle to expand YouTube chapters into separate playlist tracks. Must compose cleanly with the configurable split length (same `split` time-range fields).
 
 ### Desktop app wrapper (Electron)
 
@@ -60,7 +60,7 @@ Optional per-result toggle to expand YouTube chapters into separate playlist tra
 
 ### Audio trim
 
-~~Cut intros/outros (and similar) before save. Non-trivial UX; trim points per track in the playlist editor.~~ — **done**: scissors on a YouTube track or split group; waveform flyout/tray; keep-region re-splits when still over 55 minutes.
+~~Cut intros/outros (and similar) before save. Non-trivial UX; trim points per track in the playlist editor.~~ — **done**: scissors on a YouTube track or split group; waveform flyout/tray; keep-region re-splits when it is still longer than the split length.
 
 ### YouTube URL paste
 

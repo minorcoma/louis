@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { YoutubeSearchAction } from '#shared/myo-editor/youtubeUrl'
+
 const query = defineModel<string>({ required: true })
 const animatedPlaceholder = ref('')
 
@@ -10,12 +12,19 @@ const props = withDefaults(defineProps<{
   embedded?: boolean
   /** True after a search has been submitted (show Clear instead of Search). */
   clearable?: boolean
+  action?: YoutubeSearchAction
 }>(), {
   label: 'Search for stuff',
   placeholders: () => ['Nakameguro', 'Studio Ghibli', 'lofi hip hop'],
   embedded: false,
   clearable: false,
 })
+
+const resolvedAction = computed<YoutubeSearchAction>(() => props.action ?? (
+  props.clearable
+    ? { kind: 'clear', label: 'Clear', ariaLabel: 'Clear search' }
+    : { kind: 'search', label: 'Search', ariaLabel: 'Search' }
+))
 
 const emit = defineEmits<{
   submit: []
@@ -84,7 +93,7 @@ function onClearClick() {
 }
 
 function onActionClick() {
-  if (props.clearable) {
+  if (resolvedAction.value.kind === 'clear') {
     onClearClick()
     return
   }
@@ -163,11 +172,11 @@ onUnmounted(() => {
           <button
             type="button"
             class="maru-button maru-button--sm typetester-inline-search-btn text-maru-black"
-            :class="clearable ? 'bg-maru-yellow-light' : 'bg-maru-turquoise-light'"
-            :aria-label="clearable ? 'Clear search' : 'Search'"
+            :class="resolvedAction.kind === 'clear' ? 'bg-maru-yellow-light' : 'bg-maru-turquoise-light'"
+            :aria-label="resolvedAction.ariaLabel"
             @click="onActionClick"
           >
-            <span class="maru-button__label">{{ clearable ? 'Clear' : 'Search' }}</span>
+            <span class="maru-button__label">{{ resolvedAction.label }}</span>
           </button>
         </div>
       </div>
