@@ -56,10 +56,10 @@ const content = computed((): { emoji: EmojiId | null, title: string, description
       emoji: null,
       title: 'Name this playlist',
       description: count === 0
-        ? 'Name it to create the playlist on Yoto, then add tracks from Search.'
+        ? 'Name it to create the playlist on Yoto, then add tracks from Search or an MP3 or M4B.'
         : count === 1
-          ? 'Name it to create the playlist and add the selected track from Search.'
-          : `Name it to create the playlist and add ${count} tracks from Search.`,
+          ? 'Name it to create the playlist and add this track.'
+          : `Name it to create the playlist and add ${count} tracks.`,
     }
   }
 
@@ -68,8 +68,8 @@ const content = computed((): { emoji: EmojiId | null, title: string, description
       emoji: 'MusicalNotes',
       title: 'Drop videos here',
       description: editor?.isNewPlaylist?.value
-        ? `${PLAYLIST_NOT_ON_YOTO_YET_MESSAGE} Drag tracks from YouTube Search, or paste a video, playlist, or channel URL in Search.`
-        : 'Drag tracks from YouTube Search, or paste a video, playlist, or channel URL in Search.',
+        ? `${PLAYLIST_NOT_ON_YOTO_YET_MESSAGE} Drag tracks from YouTube Search, paste a link, or add an MP3 or M4B.`
+        : 'Drag tracks from YouTube Search, paste a link, or add an MP3 or M4B.',
     }
   }
 

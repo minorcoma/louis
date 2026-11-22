@@ -115,6 +115,18 @@ export function playlistToYotoContent(
         split: playlistTrack.split ?? action.split,
       })
     }
+    else if (action.kind === 'extract-local') {
+      const transcoded = uploadedByIndex.get(i)
+      if (!transcoded) {
+        throw new Error(`Missing upload result for track "${playlistTrack.title}"`)
+      }
+      payload = trackFromTranscoded(
+        playlistTrack.title,
+        chapterOverlayLabel,
+        transcoded,
+        displays.track,
+      )
+    }
     else if (action.kind === 'reuse-yoto' || action.kind === 'passthrough-stream') {
       payload = {
         ...toYotoTrackPayload(

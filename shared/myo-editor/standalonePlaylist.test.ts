@@ -91,7 +91,7 @@ describe('standalone playlist drafts', () => {
     )
     assert.equal(
       getStandalonePlaylistValidationError('Bedtime', []),
-      'Add at least one YouTube track before creating this playlist.',
+      'Add at least one track before creating this playlist.',
     )
     assert.equal(getStandalonePlaylistValidationError('Bedtime', [youtubeTrack()]), null)
   })
@@ -102,7 +102,7 @@ describe('standalone playlist drafts', () => {
         ...youtubeTrack(),
         source: 'yoto-upload',
       }]),
-      'New playlists can only include supported YouTube tracks.',
+      'New playlists can only include YouTube tracks and MP3 or M4B files.',
     )
   })
 

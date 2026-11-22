@@ -13,7 +13,11 @@ import { useYoutubeAudioPlayer, YOUTUBE_AUDIO_PLAYER_KEY } from './useYoutubeAud
 import { MYO_EDITOR_KEY } from '~/components/myo-editor/keys'
 import { videosToPlaylistTracks } from '~/components/playlist/types'
 import { classifyInsertTracksOutcome } from '#shared/myo-editor/standalonePlaylist'
+import { localAudioExtension, planLocalAudioTracks } from '#shared/myo-editor/localAudio'
+import { getSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
 import { classifyYoutubeSearchInput, youtubeSearchAction } from '#shared/myo-editor/youtubeUrl'
+import { uploadLocalAudio } from '~/utils/uploadLocalAudio'
+import type { PlaylistTrack } from '#shared/myo-editor/types'
 import type { YoutubeVideoSummary } from './types'
 
 const props = withDefaults(defineProps<{
@@ -78,6 +82,8 @@ const { showAddedToPlaylist, showDuplicateTrack, showError } = useToast()
 const { playEvent } = useUiSound()
 const editor = inject(MYO_EDITOR_KEY, null)
 const adding = ref(false)
+const addingFiles = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
 const searchAction = computed(() =>
   youtubeSearchAction(query.value, Boolean(submittedQuery.value.trim())),
@@ -100,16 +106,16 @@ function addedLabel(videos: YoutubeVideoSummary[], added: number) {
   return `${added} tracks`
 }
 
-function commitVideos(
-  videos: YoutubeVideoSummary[],
-  options: { truncated: boolean, playlistTitle?: string },
+function commitTracks(
+  tracks: PlaylistTrack[],
+  options: {
+    truncated?: boolean
+    playlistTitle?: string
+    addedLabel: string | ((added: number) => string)
+    duplicateLabel?: string
+  },
 ) {
-  if (!editor || videos.length === 0) return
-  const tracks = videosToPlaylistTracks(videos)
-  if (tracks.length === 0) {
-    showError('Nothing in that link can be added.')
-    return
-  }
+  if (!editor || tracks.length === 0) return
 
   if (!editor.isEditing.value && !editor.startNewPlaylist()) {
     showError('Could not start a new playlist. Try again.')
@@ -120,7 +126,7 @@ function commitVideos(
     editor.appendPendingCreateTracks(tracks)
     playEvent('buttonClick')
     const extra = options.truncated
-      ? ' Yoto playlists hold 100 tracks, so the rest of this playlist was left out.'
+      ? ' Yoto playlists hold 100 tracks, so the rest was left out.'
       : ''
     showError(`Name this playlist to finish adding these tracks.${extra}`, 8000, 'Name this playlist')
     return
@@ -137,7 +143,7 @@ function commitVideos(
   const destination = editor.cardTitle.value.trim() || options.playlistTitle || 'playlist'
   if (options.truncated && result.added > 0) {
     showError(
-      `Added ${result.added}. Yoto playlists hold 100 tracks, so the rest of this playlist was left out.`,
+      `Added ${result.added}. Yoto playlists hold 100 tracks, so the rest was left out.`,
       8000,
     )
     return
@@ -147,11 +153,85 @@ function commitVideos(
     return
   }
   if (outcome.kind === 'added') {
-    showAddedToPlaylist(addedLabel(videos, result.added), destination)
+    const label = typeof options.addedLabel === 'function'
+      ? options.addedLabel(result.added)
+      : options.addedLabel
+    showAddedToPlaylist(label, destination)
     return
   }
   if (outcome.kind === 'duplicate') {
-    showDuplicateTrack(videos[0]?.title ?? 'Track')
+    showDuplicateTrack(options.duplicateLabel ?? 'Track')
+  }
+}
+
+function commitVideos(
+  videos: YoutubeVideoSummary[],
+  options: { truncated: boolean, playlistTitle?: string },
+) {
+  const tracks = videosToPlaylistTracks(videos)
+  if (tracks.length === 0) {
+    showError('Nothing in that link can be added.')
+    return
+  }
+  commitTracks(tracks, {
+    truncated: options.truncated,
+    playlistTitle: options.playlistTitle,
+    addedLabel: added => addedLabel(videos, added),
+    duplicateLabel: videos[0]?.title ?? 'Track',
+  })
+}
+
+function localAddedLabel(tracks: PlaylistTrack[]): string {
+  if (tracks.length === 1) return tracks[0]?.title ?? 'Track'
+  const books = new Set(tracks.map(track => track.subtitle).filter(Boolean))
+  if (books.size === 1 && tracks[0]?.subtitle && tracks[0].subtitle !== 'MP3' && tracks[0].subtitle !== 'M4B') {
+    return `${tracks.length} chapters`
+  }
+  return `${tracks.length} tracks`
+}
+
+async function onLocalFiles(event: Event) {
+  const input = event.target as HTMLInputElement
+  const files = [...(input.files ?? [])]
+  input.value = ''
+  if (files.length === 0 || addingFiles.value) return
+  addingFiles.value = true
+  const tracks: PlaylistTrack[] = []
+  const problems: string[] = []
+  try {
+    for (const file of files) {
+      if (!localAudioExtension(file.name)) {
+        problems.push(`${file.name} is not an MP3 or M4B.`)
+        continue
+      }
+      try {
+        const probed = await uploadLocalAudio(file)
+        const planned = planLocalAudioTracks({
+          uploadId: probed.uploadId,
+          filename: probed.filename,
+          ext: probed.ext,
+          durationSeconds: probed.durationSeconds,
+          chapters: probed.chapters,
+          splitTargetSeconds: getSplitTargetSeconds(),
+        })
+        if (planned.length === 0) {
+          problems.push(`Could not read ${file.name}.`)
+          continue
+        }
+        tracks.push(...planned)
+        if (probed.chaptersWarning) problems.push(`${file.name}: ${probed.chaptersWarning}`)
+      }
+      catch (err) {
+        problems.push(err instanceof Error ? err.message : `Could not read ${file.name}.`)
+      }
+    }
+    if (tracks.length > 0) {
+      commitTracks(tracks, { addedLabel: localAddedLabel(tracks) })
+    }
+    if (problems.length > 0) showError(problems.join(' '))
+  }
+  finally {
+    addingFiles.value = false
   }
 }
 
@@ -247,6 +327,24 @@ onUnmounted(() => {
         @submit="onSearchSubmit"
         @clear="onClearSearch"
       />
+      <button
+        type="button"
+        class="maru-button maru-button--sm bg-maru-yellow-light text-maru-black mt-2 w-full"
+        :disabled="addingFiles"
+        aria-label="Add an MP3 or M4B. M4B files are split into chapters."
+        @click="fileInput?.click()"
+      >
+        <span class="maru-button__label">{{ addingFiles ? 'Reading…' : 'Add MP3 or M4B' }}</span>
+      </button>
+      <input
+        ref="fileInput"
+        class="sr-only"
+        type="file"
+        accept=".mp3,.m4b,audio/mpeg,audio/mp4,audio/x-m4b"
+        multiple
+        aria-label="Choose MP3 or M4B files"
+        @change="onLocalFiles"
+      >
     </div>
 
     <div :class="embedded ? 'flex flex-1 min-h-0 flex-col overflow-hidden' : ''">

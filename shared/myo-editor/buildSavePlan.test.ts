@@ -250,4 +250,23 @@ describe('split YouTube groups', () => {
     const plan = buildSavePlan([existing], parts, EMPTY_CARD_DETAIL)
     assert.equal(plan.tracks.every(action => action.kind === 'extract-youtube'), true)
   })
+
+  it('extracts a local mp3 or m4b instead of treating it as unsupported', () => {
+    const local = youtubeTrack({
+      id: 'local:11111111-1111-4111-8111-111111111111',
+      title: 'Chapter 1',
+      source: 'local-file',
+      youtubeId: undefined,
+      localFile: {
+        uploadId: '11111111-1111-4111-8111-111111111111',
+        filename: 'book.m4b',
+        startSeconds: 0,
+        durationSeconds: 90,
+      },
+    })
+    const plan = buildSavePlan([], [local], EMPTY_CARD_DETAIL)
+    assert.equal(plan.errors.length, 0)
+    assert.equal(plan.tracks[0]?.kind, 'extract-local')
+    assert.equal(playlistSaveExtractsYoutube([], [local], null), true)
+  })
 })

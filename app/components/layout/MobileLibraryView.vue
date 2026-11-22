@@ -854,10 +854,10 @@ onMounted(() => {
           class="empty-state-meta text-center py-8"
         >
           <template v-if="isNewPlaylist">
-            {{ PLAYLIST_NOT_ON_YOTO_YET_MESSAGE }} Add songs from Search, or paste a video, playlist, or channel URL.
+            {{ PLAYLIST_NOT_ON_YOTO_YET_MESSAGE }} Add songs from Search, paste a link, or add an MP3 or M4B.
           </template>
           <template v-else>
-            No tracks yet. Add songs from Search, or paste a video, playlist, or channel URL.
+            No tracks yet. Add songs from Search, paste a link, or add an MP3 or M4B.
           </template>
         </p>
 

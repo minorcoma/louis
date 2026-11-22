@@ -1,4 +1,5 @@
 import type { PlaylistTrack, SavePlan, SaveTrackAction, YotoCardDetail, YotoTrackReuseSnapshot } from './types.ts'
+import { isSupportedLocalAudioTrack } from './localAudio.ts'
 import { baselineRowIds, playlistRowId } from './playlistRowId.ts'
 import { findOriginalTrack, isYotoHostedTrack } from './trackLookup.ts'
 import { toYotoTrackReuseSnapshot } from './yotoTrackPayload.ts'
@@ -83,6 +84,21 @@ function classifyTrack(
     return { kind: 'reuse-yoto', snapshot, playlistIndex: index }
   }
 
+  if (track.source === 'local-file') {
+    if (!isSupportedLocalAudioTrack(track) || !track.localFile) {
+      return {
+        kind: 'unsupported',
+        reason: `Local track "${track.title}" is missing its file. Add the MP3 or M4B again.`,
+        playlistIndex: index,
+      }
+    }
+    return {
+      kind: 'extract-local',
+      uploadId: track.localFile.uploadId,
+      playlistIndex: index,
+    }
+  }
+
   const youtubeId = track.youtubeId ?? (track.source === 'app-youtube' ? track.id : undefined)
 
   if (track.source === 'youtube-url') {
@@ -162,12 +178,14 @@ export const EMPTY_CARD_DETAIL: YotoCardDetail = {
   chapters: [],
 }
 
-/** True when this Update will download/transcode at least one YouTube track. */
+/** True when this Update will transcode at least one new YouTube or local track. */
 export function playlistSaveExtractsYoutube(
   baselinePlaylist: PlaylistTrack[],
   playlist: PlaylistTrack[],
   detail: YotoCardDetail | null,
 ): boolean {
   const plan = buildSavePlan(baselinePlaylist, playlist, detail ?? EMPTY_CARD_DETAIL)
-  return plan.tracks.some(action => action.kind === 'extract-youtube')
+  return plan.tracks.some(action =>
+    action.kind === 'extract-youtube' || action.kind === 'extract-local',
+  )
 }

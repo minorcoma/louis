@@ -1,9 +1,18 @@
 export type TrackSource =
   | 'app-youtube'
   | 'youtube-url'
+  | 'local-file'
   | 'yoto-upload'
   | 'stream'
   | 'unknown'
+
+/** A file uploaded to this Louis server, and the slice this row plays. */
+export interface LocalAudioFile {
+  uploadId: string
+  filename: string
+  startSeconds: number
+  durationSeconds: number
+}
 
 export interface YotoTrackPayload {
   key: string
@@ -104,6 +113,8 @@ export interface PlaylistTrack {
     startSeconds: number
     endSeconds: number
   }
+  /** Present when this row was added from an MP3 or M4B on this server. */
+  localFile?: LocalAudioFile
 }
 
 export interface ProvenanceTrackEntry {
@@ -134,6 +145,7 @@ export interface TranscodedAudioResult {
 
 export type SaveTrackAction =
   | { kind: 'extract-youtube'; youtubeId: string; playlistIndex: number; split?: TrackSplit }
+  | { kind: 'extract-local'; uploadId: string; playlistIndex: number }
   | { kind: 'reuse-yoto'; snapshot: YotoTrackReuseSnapshot; playlistIndex: number }
   | { kind: 'passthrough-stream'; snapshot: YotoTrackReuseSnapshot; playlistIndex: number }
   | { kind: 'unsupported'; reason: string; playlistIndex: number }

@@ -10,6 +10,8 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
+- **Add MP3 or M4B** from the search panel. An M4B is cut on its chapters. A chapter longer than 55 minutes, or an MP3 longer than the split length, is cut into even parts so Yoto will accept it.
+- New tracks each get a different picture from Yoto’s public icons. A track that already has artwork keeps it.
 - Paste a YouTube video link and choose **Add**, or a playlist link and choose **Add all**. Add all pages through the playlist (up to Yoto’s 100 tracks) and drops the tracks into the open playlist, or asks you to name a new one.
 - **Settings → General → Split length** (default 15 minutes). Long videos are cut into even parts around that length. A short leftover is folded into the other parts, so a track is not left as a 2-minute stub. Parts still stop at 55 minutes.
 - **Settings → General → Audio quality** (default Standard, 96 kbps). Saves are re-encoded at that bitrate instead of copying YouTube’s file, which was landing over 100 MB and getting rejected. High is the old 192 kbps setting.

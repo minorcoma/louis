@@ -37,13 +37,17 @@ export function normalizeIconUrl(
   return ''
 }
 
-export async function fetchPublicYotoIcons(event: H3Event): Promise<YotoDisplayIconRecord[]> {
-  const accessToken = await getYotoAccessToken(event)
+export async function fetchPublicYotoIconRecords(accessToken: string): Promise<YotoDisplayIconRecord[]> {
   const data = await fetchYotoApi<YotoDisplayIconsResponse>(
     '/media/displayIcons/user/yoto',
     accessToken,
   )
   return data.displayIcons ?? []
+}
+
+export async function fetchPublicYotoIcons(event: H3Event): Promise<YotoDisplayIconRecord[]> {
+  const accessToken = await getYotoAccessToken(event)
+  return fetchPublicYotoIconRecords(accessToken)
 }
 
 export async function fetchUserYotoIcons(event: H3Event): Promise<YotoDisplayIconRecord[]> {

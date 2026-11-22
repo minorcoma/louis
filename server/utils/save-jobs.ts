@@ -31,6 +31,8 @@ import {
 import { hostDiskFullMessageIfMatch } from '#shared/hostDiskFull'
 import { normalizeSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
 import { downloadYoutubeAudio } from './youtube-download'
+import { uploadLocalPlaylistTrack } from './local-audio-extract'
+import { assignIconsForNewExtracts } from './assign-save-icons'
 import { withSaveAudioSettings } from './save-audio-settings'
 import { hashFileSha256, pollPutAudioTranscode, putAudioForTranscode } from './yoto-media'
 import { loudnormAudioFile } from './ffmpeg-loudnorm'
@@ -895,6 +897,38 @@ async function runSaveJob(
       throw fatal
     }
 
+    const localActions = workingPlan.tracks.filter(
+      (action): action is Extract<SaveTrackAction, { kind: 'extract-local' }> =>
+        action.kind === 'extract-local',
+    )
+    for (let localIndex = 0; localIndex < localActions.length; localIndex++) {
+      const action = localActions[localIndex]!
+      const track = workingPlaylist[action.playlistIndex]
+      if (!track) continue
+      updateTrack(job, action.playlistIndex, 'extracting')
+      setJobProgress({
+        status: 'uploading',
+        progress: OVERALL_START + ((extractActions.length + localIndex + 0.4) / Math.max(1, extractActions.length + localActions.length)) * (OVERALL_TRACKS_END - OVERALL_START),
+        operationProgress: 20,
+      })
+      try {
+        const transcoded = await uploadLocalPlaylistTrack({
+          accessToken,
+          audioWorkDir,
+          jobId,
+          playlistIndex: action.playlistIndex,
+          track,
+          normalizeVolume,
+          onStatus: status => updateTrack(job, action.playlistIndex, status),
+        })
+        finishExtractedPart(action.playlistIndex, transcoded)
+      }
+      catch (err) {
+        updateTrack(job, action.playlistIndex, 'failed')
+        throw err
+      }
+    }
+
     const extractCount = extractActions.length
 
     if (extractCount === 0 && reuseActions.length > 0) {
@@ -915,6 +949,8 @@ async function runSaveJob(
     }
 
     setJobProgress({ status: 'posting', progress: OVERALL_POSTING, operationProgress: 90 })
+
+    workingPlaylist = await assignIconsForNewExtracts(accessToken, workingPlaylist, workingPlan)
 
     const built = playlistToYotoContent(
       cardTitle,

@@ -2,6 +2,8 @@ import type { InjectionKey } from 'vue'
 import type { PlaylistTrack } from '~/components/playlist/types'
 import { playlistRowId } from '#shared/myo-editor/playlistRowId'
 import { applyTrackIcon, resolveTrackIcon, mediaIdFromIcon16x16 } from '#shared/myo-editor/trackArt'
+import { assignRandomTrackIcons } from '#shared/myo-editor/assignTrackIcons'
+import { loadPublicIconCatalog, publicIconCatalog } from '~/utils/publicIconCatalog'
 import { isPersistedCardTrack } from '#shared/myo-editor/patchCardIcon'
 import type { SaveJobPhase } from '#shared/myo-editor/types'
 import type { YotoMyoCard } from '~/components/yoto-myo/types'
@@ -225,6 +227,7 @@ function clonePlaylist(playlist: PlaylistTrack[]): PlaylistTrack[] {
       : item.yotoReuse,
     split: item.split ? { ...item.split } : item.split,
     trim: item.trim ? { ...item.trim } : item.trim,
+    localFile: item.localFile ? { ...item.localFile } : item.localFile,
   }))
 }
 
@@ -309,6 +312,35 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
   const activeSaves = ref(new Map<string, CardSaveState>())
   const pendingDrafts = ref(new Map<string, CardSaveSnapshot>())
   const pendingCreateTracks = ref<PlaylistTrack[]>([])
+
+  function iconIds(tracks: PlaylistTrack[]): string[] {
+    return tracks.flatMap((track) => {
+      const id = mediaIdFromIcon16x16(resolveTrackIcon(track).icon16x16)
+      return id ? [id] : []
+    })
+  }
+
+  function withRandomIcons(tracks: PlaylistTrack[], avoid: PlaylistTrack[] = []): PlaylistTrack[] {
+    return assignRandomTrackIcons(tracks, publicIconCatalog.value, {
+      avoidMediaIds: iconIds(avoid),
+    })
+  }
+
+  watch(publicIconCatalog, () => {
+    if (publicIconCatalog.value.length === 0) return
+    const current = playlist.value
+    const next = assignRandomTrackIcons(current, publicIconCatalog.value, {
+      include: track => !isPersistedCardTrack(track, baselinePlaylist.value),
+    })
+    if (next.some((track, index) => track !== current[index])) playlist.value = next
+    const pending = pendingCreateTracks.value
+    const pendingNext = assignRandomTrackIcons(pending, publicIconCatalog.value)
+    if (pendingNext.some((track, index) => track !== pending[index])) {
+      pendingCreateTracks.value = pendingNext
+    }
+  })
+
+  if (import.meta.client) void loadPublicIconCatalog()
   const podcastCardIds = ref(new Set<string>(readPodcastCardIds()))
 
   function touchActiveSaves() {
@@ -1060,11 +1092,12 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
   const pendingCreateTrackCount = computed(() => pendingCreateTracks.value.length)
 
   function queuePendingCreateTracks(tracks: PlaylistTrack[]) {
-    pendingCreateTracks.value = clonePlaylist(tracks)
+    pendingCreateTracks.value = clonePlaylist(withRandomIcons(tracks))
   }
 
   function appendPendingCreateTracks(tracks: PlaylistTrack[]) {
-    pendingCreateTracks.value = [...pendingCreateTracks.value, ...clonePlaylist(tracks)]
+    const stamped = withRandomIcons(tracks, pendingCreateTracks.value)
+    pendingCreateTracks.value = [...pendingCreateTracks.value, ...clonePlaylist(stamped)]
   }
 
   function startNewPlaylist(): boolean {
@@ -1202,7 +1235,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
       return { ok: true, added: 0, skipped, overflow }
     }
 
-    const cloned = clonePlaylist(toAdd)
+    const cloned = clonePlaylist(withRandomIcons(toAdd, playlist.value))
     const insertAt = atIndex === undefined
       ? undefined
       : snapInsertTrackIndex(playlist.value, atIndex)

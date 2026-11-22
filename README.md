@@ -20,7 +20,8 @@ Demo:
 
 ## Features
 
-- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together
+- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together. **Add MP3 or M4B** reads a file on this computer; an M4B becomes one track per chapter
+- New tracks get a different picture from Yoto’s public icons, instead of every chapter sharing one default
 - **Settings → General** sets split length (default 15 minutes, short leftovers folded in) and audio quality (default Standard / 96 kbps, so a chapter stays under Yoto’s 100 MB limit)
 - Browse your Yoto playlists. **New** names a playlist and creates it on Yoto right away (empty, or with tracks already picked in Search)
 - Drag-and-drop playlist editing (desktop); phone Search / Library flow with Add to playlist; **Add to Home**; phone Menu can Update every pending playlist at once

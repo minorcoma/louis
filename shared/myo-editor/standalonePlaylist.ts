@@ -1,4 +1,5 @@
 import type { PlaylistTrack, SaveJobState } from './types.ts'
+import { isSupportedLocalAudioTrack } from './localAudio.ts'
 
 export const NEW_PLAYLIST_SAVE_KEY = 'new-playlist-draft'
 export const UNCERTAIN_CREATE_START_MESSAGE
@@ -87,8 +88,8 @@ export function getStandalonePlaylistCreateError(
   if (!title.trim()) {
     return 'Give this playlist a title before creating it.'
   }
-  if (playlist.some(track => !isSupportedYoutubeTrack(track))) {
-    return 'New playlists can only include supported YouTube tracks.'
+  if (playlist.some(track => !isSupportedYoutubeTrack(track) && !isSupportedLocalAudioTrack(track))) {
+    return 'New playlists can only include YouTube tracks and MP3 or M4B files.'
   }
   return null
 }
@@ -100,7 +101,7 @@ export function getStandalonePlaylistValidationError(
   const createError = getStandalonePlaylistCreateError(title, playlist)
   if (createError) return createError
   if (playlist.length === 0) {
-    return 'Add at least one YouTube track before creating this playlist.'
+    return 'Add at least one track before creating this playlist.'
   }
   return null
 }
