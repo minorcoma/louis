@@ -1573,7 +1573,7 @@ export function useMyoEditor(options: UseMyoEditorOptions = {}) {
     playlistManageBusy.value = true
     try {
       const body = new FormData()
-      body.append('file', file, 'cover.png')
+      body.append('file', file, file.type === 'image/jpeg' ? 'cover.jpg' : 'cover.png')
       const result = await $fetch<{ ok: true; coverUrl: string }>(
         `/api/yoto/content/${cardId}/patch-cover-upload`,
         {

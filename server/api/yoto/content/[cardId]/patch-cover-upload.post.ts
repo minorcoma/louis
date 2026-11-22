@@ -11,6 +11,13 @@ function looksLikePng(buffer: Buffer): boolean {
     && buffer[3] === 0x47
 }
 
+function looksLikeJpeg(buffer: Buffer): boolean {
+  return buffer.length >= 3
+    && buffer[0] === 0xff
+    && buffer[1] === 0xd8
+    && buffer[2] === 0xff
+}
+
 export default defineEventHandler(async (event) => {
   const cardId = getRouterParam(event, 'cardId')
   if (!cardId) {
@@ -38,12 +45,19 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Cover image size out of range',
     })
   }
-  if (!looksLikePng(buffer)) {
-    throw createError({ statusCode: 400, statusMessage: 'Cover must be a PNG' })
+  // The client sends PNG, or JPEG when a detailed photo's PNG is over the cap.
+  const isPng = looksLikePng(buffer)
+  if (!isPng && !looksLikeJpeg(buffer)) {
+    throw createError({ statusCode: 400, statusMessage: 'Cover must be a PNG or JPEG' })
   }
 
   const accessToken = await getYotoAccessToken(event)
-  const { mediaUrl } = await uploadYotoCover(accessToken, buffer, 'cover.png')
+  const { mediaUrl } = await uploadYotoCover(
+    accessToken,
+    buffer,
+    isPng ? 'cover.png' : 'cover.jpg',
+    isPng ? 'image/png' : 'image/jpeg',
+  )
   await applyPlaylistCoverUrl(accessToken, cardId, mediaUrl)
   return { ok: true as const, coverUrl: mediaUrl }
 })

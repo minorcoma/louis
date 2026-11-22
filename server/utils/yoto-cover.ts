@@ -45,6 +45,7 @@ export async function uploadYotoCover(
   accessToken: string,
   file: Buffer,
   filename = 'cover.png',
+  contentType: 'image/png' | 'image/jpeg' = 'image/png',
 ): Promise<YotoCoverUploadResult> {
   // coverType=default + autoconvert → Yoto serves ~638×1011 (see playlistCoverCrop export size).
   const query = new URLSearchParams({
@@ -60,7 +61,7 @@ export async function uploadYotoCover(
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'image/png',
+        'Content-Type': contentType,
       },
       body: file,
     })
