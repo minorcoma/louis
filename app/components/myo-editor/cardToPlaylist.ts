@@ -11,6 +11,7 @@ import { sanitizeSplitGrouping } from '#shared/myo-editor/splitTrack'
 const SOURCE_LABELS: Record<TrackSource, string> = {
   'app-youtube': 'YouTube',
   'youtube-url': 'YouTube URL',
+  'local-file': 'MP3 / M4B',
   'yoto-upload': 'Yoto upload',
   stream: 'Stream',
   unknown: 'Unknown',

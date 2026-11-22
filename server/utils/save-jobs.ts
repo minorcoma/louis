@@ -929,7 +929,9 @@ async function runSaveJob(
       }
     }
 
-    const extractCount = extractActions.length
+    // Local MP3/M4B uploads count as new audio too, so the status doesn't fall
+    // back to 'downloading' after they finish.
+    const extractCount = extractActions.length + localActions.length
 
     if (extractCount === 0 && reuseActions.length > 0) {
       setJobProgress({

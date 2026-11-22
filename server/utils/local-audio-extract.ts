@@ -37,7 +37,7 @@ export async function uploadLocalPlaylistTrack(options: {
   }
 
   const probed = await probeAudioDurationSeconds(stored.filePath)
-  let start = Math.max(0, file.startSeconds)
+  const start = Math.max(0, file.startSeconds)
   let duration = file.durationSeconds
   if (probed && start >= probed) {
     throw createError({
