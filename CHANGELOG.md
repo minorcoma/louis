@@ -10,6 +10,8 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
+- **Find icons** on a playlist. It searches Yoto’s icons and yotoicons.com with the card name and each track title, then applies a different match.
+- **Search covers** in Artwork. It looks up album and book covers for the playlist name and lets you crop one.
 - **Add MP3 or M4B** from the search panel. An M4B is cut on its chapters. A chapter longer than 55 minutes, or an MP3 longer than the split length, is cut into even parts so Yoto will accept it.
 - New tracks each get a different picture from Yoto’s public icons. A track that already has artwork keeps it.
 - Paste a YouTube video link and choose **Add**, or a playlist link and choose **Add all**. Add all pages through the playlist (up to Yoto’s 100 tracks) and drops the tracks into the open playlist, or asks you to name a new one.

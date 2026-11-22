@@ -31,6 +31,7 @@ import TrackArtThumb from '~/components/track-art/TrackArtThumb.vue'
 import { TRACK_ART_EDITOR_KEY } from '~/composables/useTrackArtEditor'
 import { TRACK_TRIM_EDITOR_KEY } from '~/composables/useTrackTrimEditor'
 import PlaylistUpdatePrompt from '~/components/playlist/PlaylistUpdatePrompt.vue'
+import FindIconsButton from '~/components/playlist/FindIconsButton.vue'
 import PlaylistArtworkEditor from '~/components/playlist/PlaylistArtworkEditor.vue'
 import { usePlaylistEnterStagger } from '~/components/playlist/usePlaylistEnterStagger'
 
@@ -730,8 +731,12 @@ onMounted(() => {
           Loading playlist...
         </p>
 
+        <FindIconsButton
+          v-if="showTrackList && !(loading && !isPlaylistLocked)"
+          class="mt-3"
+        />
         <TransitionGroup
-          v-else-if="showTrackList"
+          v-if="showTrackList && !(loading && !isPlaylistLocked)"
           tag="ul"
           name="mobile-card-track"
           class="mobile-card-tracks list-none m-0 p-0 flex flex-col gap-2 mt-3"

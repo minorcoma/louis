@@ -44,7 +44,7 @@ const sections = [
       'Watch capacity meters for track count and length',
       'Tap Update to save tracks to Yoto — long videos become multiple tracks and can take a while',
       'If the save downloads YouTube audio, you can normalize those new tracks; existing playlist tracks stay as they are',
-      'The playlist menu can set Artwork (generated covers), Rename (saves the name to Yoto now), or Delete the loaded playlist',
+      'Find icons matches the card name and track titles to icons. The playlist menu can set Artwork (generate, upload, or search covers), Rename (saves the name to Yoto now), or Delete the loaded playlist',
     ],
   },
 ] as const

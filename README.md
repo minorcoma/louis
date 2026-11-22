@@ -25,7 +25,7 @@ Demo:
 - **Settings → General** sets split length (default 15 minutes, short leftovers folded in) and audio quality (default Standard / 96 kbps, so a chapter stays under Yoto’s 100 MB limit)
 - Browse your Yoto playlists. **New** names a playlist and creates it on Yoto right away (empty, or with tracks already picked in Search)
 - Drag-and-drop playlist editing (desktop); phone Search / Library flow with Add to playlist; **Add to Home**; phone Menu can Update every pending playlist at once
-- Playlist covers: generated art on create; **Artwork** to generate, upload, or crop a cover to Yoto’s default size (638×1011). Rename or delete from the playlist menu
+- Playlist covers: generated art on create; **Artwork** to generate, upload, search covers by the playlist name, or crop a cover to Yoto’s default size (638×1011). **Find icons** matches the card name and track titles to Yoto icons. Rename or delete from the playlist menu
 - Auto-split long YouTube sources (>55 min) into Part tracks; trim intros/outros before save
 - Save / Update to Yoto with download and transcode progress; optional normalize for new YouTube extracts
 - Per-track 16×16 art (Yoto icon library, [yotoicons.com](https://yotoicons.com/), upload, or draw) — reconnect Yoto once if icon upload asks for `user:icons:manage`

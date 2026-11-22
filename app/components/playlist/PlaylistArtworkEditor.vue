@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import MaruTooltip from '~/components/ui/MaruTooltip.vue'
+import { MYO_EDITOR_KEY } from '~/components/myo-editor/keys'
+import { coverSearchQuery, type CoverSearchHit } from '#shared/myo-editor/coverSearch'
 import { loadCoverImage, renderPlaylistCoverPng } from './renderPlaylistCover'
 import {
   appendArtworkHistory,
@@ -58,6 +60,10 @@ const emit = defineEmits<{
 
 const { playEvent } = useUiSound()
 const { showError } = useToast()
+const playlistEditor = inject(MYO_EDITOR_KEY, null)
+const searchingCovers = ref(false)
+const coverQuery = ref('')
+const coverResults = ref<CoverSearchHit[]>([])
 
 const items = ref<PlaylistArtworkHistoryItem[]>([])
 const index = ref(-1)
@@ -178,6 +184,8 @@ function endCrop() {
 }
 
 function resetHistory() {
+  coverResults.value = []
+  coverQuery.value = ''
   appliedSpec.value = null
   revokeDroppedUploads([])
   items.value = []
@@ -376,6 +384,99 @@ function onUpload() {
   }
   playEvent('buttonClick')
   fileInputRef.value?.click()
+}
+
+async function beginCropFromBlob(blob: Blob): Promise<boolean> {
+  const error = playlistCoverFileError(new File([blob], 'cover.jpg', { type: blob.type || 'image/jpeg' }))
+  if (error) {
+    playEvent('disabled')
+    showError(error)
+    return false
+  }
+  const url = URL.createObjectURL(blob)
+  cropBusy.value = true
+  try {
+    const image = await loadCoverImage(url)
+    const replaceOpenUpload = cropping.value && current.value?.kind === 'uploaded'
+    if (cropUrl.value) URL.revokeObjectURL(cropUrl.value)
+    cropUrl.value = url
+    cropWidth.value = image.naturalWidth
+    cropHeight.value = image.naturalHeight
+    cropZoom.value = 1
+    cropPanX.value = 0
+    cropPanY.value = 0
+    const snap = await snapshotCrop()
+    if (snap) writeUploadToHistory(snap, replaceOpenUpload)
+    return true
+  }
+  catch (err: unknown) {
+    URL.revokeObjectURL(url)
+    playEvent('disabled')
+    const message = err instanceof Error ? err.message : 'Could not read that image.'
+    showError(message)
+    return false
+  }
+  finally {
+    cropBusy.value = false
+  }
+}
+
+async function onSearchCovers() {
+  if (locked.value || cropBusy.value || searchingCovers.value) {
+    playEvent('disabled')
+    return
+  }
+  const title = playlistEditor?.cardTitle.value ?? ''
+  if (!coverSearchQuery(title)) {
+    playEvent('disabled')
+    showError('Name this playlist before searching for a cover.', 5000)
+    return
+  }
+  playEvent('buttonClick')
+  searchingCovers.value = true
+  try {
+    const data = await $fetch<{ query: string, images: CoverSearchHit[] }>('/api/artwork/search', {
+      query: { q: title },
+    })
+    coverQuery.value = data.query
+    coverResults.value = data.images ?? []
+    if (coverResults.value.length === 0) {
+      showError(`No covers matched “${data.query}”.`, 5000, 'Cover search')
+    }
+  }
+  catch (err: unknown) {
+    const e = err as { data?: { statusMessage?: string }, statusMessage?: string, message?: string }
+    showError(e.data?.statusMessage || e.statusMessage || e.message || 'Cover search failed.', 6000, 'Cover search')
+  }
+  finally {
+    searchingCovers.value = false
+  }
+}
+
+async function onPickCover(hit: CoverSearchHit) {
+  if (locked.value || cropBusy.value || searchingCovers.value) {
+    playEvent('disabled')
+    return
+  }
+  playEvent('buttonClick')
+  searchingCovers.value = true
+  try {
+    const response = await fetch(`/api/artwork/image?url=${encodeURIComponent(hit.imageUrl)}`)
+    if (!response.ok) {
+      const body = await response.json().catch(() => null) as { statusMessage?: string } | null
+      throw new Error(body?.statusMessage || 'Could not download that cover.')
+    }
+    const blob = await response.blob()
+    const opened = await beginCropFromBlob(blob)
+    if (opened) coverResults.value = []
+  }
+  catch (err: unknown) {
+    playEvent('disabled')
+    showError(err instanceof Error ? err.message : 'Could not download that cover.', 6000, 'Cover search')
+  }
+  finally {
+    searchingCovers.value = false
+  }
 }
 
 async function onFileChosen(event: Event) {
@@ -671,6 +772,45 @@ defineExpose({
         @click="onSave"
       >
         <span class="maru-button__label">{{ saveLabel }}</span>
+      </button>
+    </div>
+
+    <button
+      type="button"
+      class="maru-button maru-button--sm playlist-artwork-editor__search bg-maru-turquoise-light"
+      :disabled="uploadDisabled || searchingCovers"
+      aria-label="Search for cover images using the playlist name"
+      @click="onSearchCovers"
+    >
+      <span class="maru-button__label">{{ searchingCovers ? 'Searching…' : 'Search covers' }}</span>
+    </button>
+    <p
+      v-if="searchingCovers || coverResults.length"
+      class="playlist-artwork-editor__search-query type-caption"
+    >
+      {{ searchingCovers && !coverResults.length ? 'Searching…' : coverQuery }}
+    </p>
+    <div
+      v-if="coverResults.length"
+      class="playlist-artwork-editor__results"
+      role="list"
+      :aria-label="`Covers for ${coverQuery}`"
+    >
+      <button
+        v-for="hit in coverResults"
+        :key="hit.imageUrl"
+        type="button"
+        class="playlist-artwork-editor__result"
+        role="listitem"
+        :aria-label="hit.artist ? `${hit.title} by ${hit.artist}` : hit.title"
+        :disabled="locked || cropBusy || searchingCovers"
+        @click="onPickCover(hit)"
+      >
+        <img
+          :src="hit.thumbUrl"
+          alt=""
+          draggable="false"
+        >
       </button>
     </div>
 

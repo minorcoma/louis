@@ -4,6 +4,7 @@ import { MYO_EDITOR_KEY } from '~/components/myo-editor/keys'
 import { YOTO_MYO_KEY } from '~/components/yoto-myo/keys'
 import { PLAYLIST_DROPZONE_ID } from './dnd'
 import PlaylistCardLoading from './PlaylistCardLoading.vue'
+import FindIconsButton from './FindIconsButton.vue'
 import PlaylistEmptyState from './PlaylistEmptyState.vue'
 import PlaylistItem from './PlaylistItem.vue'
 import PlaylistSplitGroup from './PlaylistSplitGroup.vue'
@@ -411,6 +412,10 @@ watch(() => props.scrollToVideoId, async (id) => {
       class="playlist-dropzone__scroll flex flex-col flex-1 min-h-0 overflow-y-auto p-3 sm:p-4"
       :class="isDropzoneLocked || isCardLoadingActive || isYotoPlaylistBlocked || !isEditing ? 'pointer-events-none select-none' : ''"
     >
+      <FindIconsButton
+        v-if="showPlaylistItems && playlist.length > 0"
+        class="mb-2"
+      />
       <TransitionGroup
         v-if="showPlaylistItems"
         tag="ol"

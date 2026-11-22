@@ -814,6 +814,7 @@
 
 .playlist-artwork-editor__generate,
 .playlist-artwork-editor__upload,
+.playlist-artwork-editor__search,
 .playlist-artwork-editor__save {
   box-shadow: 3px 3px 0 var(--color-maru-black);
   transition:
@@ -825,6 +826,7 @@
 
 .playlist-artwork-editor__generate .maru-button__label,
 .playlist-artwork-editor__upload .maru-button__label,
+.playlist-artwork-editor__search .maru-button__label,
 .playlist-artwork-editor__save .maru-button__label {
   /* Compact sm buttons need less Saeada drop than mega CTAs. */
   top: 1px;
@@ -856,6 +858,47 @@
   flex: 1 1 0;
   min-width: 0;
   width: auto;
+}
+
+.playlist-artwork-editor__search {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.playlist-artwork-editor__search-query {
+  margin: 0.35rem 0 0;
+  text-align: center;
+}
+
+.playlist-artwork-editor__results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.playlist-artwork-editor__result {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--color-maru-black);
+  border-radius: var(--radius-maru);
+  background: var(--color-maru-white);
+}
+
+.playlist-artwork-editor__result img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.playlist-artwork-editor__result:disabled {
+  opacity: 0.6;
+}
+
+.find-icons-button {
+  flex-shrink: 0;
 }
 
 .playlist-artwork-editor__customize {
@@ -1051,6 +1094,7 @@
 @media (hover: hover) and (pointer: fine) {
   .playlist-artwork-editor__generate:hover:not(:disabled),
   .playlist-artwork-editor__upload:hover:not(:disabled),
+  .playlist-artwork-editor__search:hover:not(:disabled),
   .playlist-artwork-editor__save:hover:not(:disabled) {
     transform: translate(-1px, -1px);
     box-shadow: 4px 4px 0 var(--color-maru-black);
@@ -1059,6 +1103,7 @@
 
 .playlist-artwork-editor__generate:active:not(:disabled),
 .playlist-artwork-editor__upload:active:not(:disabled),
+.playlist-artwork-editor__search:active:not(:disabled),
 .playlist-artwork-editor__save:active:not(:disabled) {
   transform: translate(1px, 1px);
   box-shadow: 1px 1px 0 var(--color-maru-black);
@@ -1066,6 +1111,7 @@
 
 .playlist-artwork-editor__generate:disabled,
 .playlist-artwork-editor__upload:disabled,
+.playlist-artwork-editor__search:disabled,
 .playlist-artwork-editor__save:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1117,6 +1163,7 @@
 
   .playlist-artwork-editor__generate,
   .playlist-artwork-editor__upload,
+  .playlist-artwork-editor__search,
   .playlist-artwork-editor__save {
     transition: opacity 0.15s ease-out;
   }
@@ -1125,6 +1172,8 @@
   .playlist-artwork-editor__generate:active:not(:disabled),
   .playlist-artwork-editor__upload:hover:not(:disabled),
   .playlist-artwork-editor__upload:active:not(:disabled),
+  .playlist-artwork-editor__search:hover:not(:disabled),
+  .playlist-artwork-editor__search:active:not(:disabled),
   .playlist-artwork-editor__save:hover:not(:disabled),
   .playlist-artwork-editor__save:active:not(:disabled),
   .playlist-artwork-editor__tag:hover:not(:disabled),
