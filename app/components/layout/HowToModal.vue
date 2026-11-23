@@ -16,10 +16,12 @@ const sections = [
   {
     id: 'youtube',
     title: 'YouTube Search',
-    body: 'Type a song, show, or artist to find videos. Paste a YouTube video, Shorts, playlist, or channel URL to load it in Search. Check rows to group them, then drag the group into a playlist — or on a phone, tap Add and pick a playlist. Add MP3 or M4B reads a file on this device; an M4B becomes one track per chapter.',
+    body: 'Type a song, show, or artist to find videos. Paste a YouTube video, Shorts, playlist, or channel URL to load it in Search. A Spotify link is matched to YouTube audio. A SoundCloud track or playlist is added directly and downloaded on Update. Check rows to group them, then drag the group into a playlist — or on a phone, tap Add and pick a playlist. Add MP3 or M4B reads a file on this device; an M4B becomes one track per chapter.',
     bullets: [
       'Search and browse YouTube results',
       'Paste a video or Shorts URL to open that track, ready to add',
+      'Paste a Spotify track, album, or playlist link and choose Add or Add all',
+      'Paste a SoundCloud track or playlist link and choose Add or Add all',
       'Paste a playlist or channel URL to load those videos, pre-checked',
       'On desktop, drag into the playlist; on a phone, tap Add and pick a playlist',
     ],

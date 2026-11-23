@@ -31,7 +31,8 @@ import {
 import { hostDiskFullMessageIfMatch } from '#shared/hostDiskFull'
 import { normalizeSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
 import { downloadYoutubeAudio } from './youtube-download'
-import { uploadLocalPlaylistTrack } from './local-audio-extract'
+import { uploadCutFromFile, uploadLocalPlaylistTrack } from './local-audio-extract'
+import { downloadSoundcloudAudio } from './soundcloud-download'
 import { assignIconsForNewExtracts } from './assign-save-icons'
 import { withSaveAudioSettings } from './save-audio-settings'
 import { hashFileSha256, pollPutAudioTranscode, putAudioForTranscode } from './yoto-media'
@@ -901,6 +902,49 @@ async function runSaveJob(
       (action): action is Extract<SaveTrackAction, { kind: 'extract-local' }> =>
         action.kind === 'extract-local',
     )
+    const soundcloudActions = workingPlan.tracks.filter(
+      (action): action is Extract<SaveTrackAction, { kind: 'extract-soundcloud' }> =>
+        action.kind === 'extract-soundcloud',
+    )
+    const soundcloudFiles = new Map<string, string>()
+    const remoteTotal = Math.max(1, extractActions.length + soundcloudActions.length + localActions.length)
+    for (let soundIndex = 0; soundIndex < soundcloudActions.length; soundIndex++) {
+      const action = soundcloudActions[soundIndex]!
+      const track = workingPlaylist[action.playlistIndex]
+      if (!track) continue
+      updateTrack(job, action.playlistIndex, 'extracting')
+      setJobProgress({
+        status: 'downloading',
+        progress: OVERALL_START + ((extractActions.length + soundIndex + 0.2) / remoteTotal) * (OVERALL_TRACKS_END - OVERALL_START),
+        operationProgress: 12,
+      })
+      try {
+        let sourcePath = soundcloudFiles.get(action.soundcloudId)
+        if (!sourcePath) {
+          sourcePath = await downloadSoundcloudAudio(action.soundcloudId, action.url, event)
+          soundcloudFiles.set(action.soundcloudId, sourcePath)
+        }
+        const transcoded = await uploadCutFromFile({
+          accessToken,
+          audioWorkDir,
+          jobId,
+          playlistIndex: action.playlistIndex,
+          title: track.title,
+          sourcePath,
+          startSeconds: track.split?.startSeconds ?? 0,
+          durationSeconds: track.split?.durationSeconds ?? track.duration ?? 0,
+          workSubdir: path.join('soundcloud', action.soundcloudId),
+          normalizeVolume,
+          onStatus: status => updateTrack(job, action.playlistIndex, status),
+        })
+        finishExtractedPart(action.playlistIndex, transcoded)
+      }
+      catch (err) {
+        updateTrack(job, action.playlistIndex, 'failed')
+        throw err
+      }
+    }
+
     for (let localIndex = 0; localIndex < localActions.length; localIndex++) {
       const action = localActions[localIndex]!
       const track = workingPlaylist[action.playlistIndex]
@@ -908,7 +952,7 @@ async function runSaveJob(
       updateTrack(job, action.playlistIndex, 'extracting')
       setJobProgress({
         status: 'uploading',
-        progress: OVERALL_START + ((extractActions.length + localIndex + 0.4) / Math.max(1, extractActions.length + localActions.length)) * (OVERALL_TRACKS_END - OVERALL_START),
+        progress: OVERALL_START + ((extractActions.length + soundcloudActions.length + localIndex + 0.4) / remoteTotal) * (OVERALL_TRACKS_END - OVERALL_START),
         operationProgress: 20,
       })
       try {
@@ -931,7 +975,7 @@ async function runSaveJob(
 
     // Local MP3/M4B uploads count as new audio too, so the status doesn't fall
     // back to 'downloading' after they finish.
-    const extractCount = extractActions.length + localActions.length
+    const extractCount = extractActions.length + soundcloudActions.length + localActions.length
 
     if (extractCount === 0 && reuseActions.length > 0) {
       setJobProgress({

@@ -10,6 +10,7 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
+- **Spotify and SoundCloud links** in Search. A Spotify track, album, or playlist is matched to YouTube audio. A SoundCloud track or playlist is downloaded on Update. Choose **Add** or **Add all**, the same as a YouTube link.
 - **Find icons** on a playlist. It searches Yoto’s icons and yotoicons.com with the card name and each track title, then applies a different match.
 - **Search covers** in Artwork. It looks up album and book covers for the playlist name and lets you crop one.
 - **Add MP3 or M4B** from the search panel. An M4B is cut on its chapters. A chapter longer than 55 minutes, or an MP3 longer than the split length, is cut into even parts so Yoto will accept it.

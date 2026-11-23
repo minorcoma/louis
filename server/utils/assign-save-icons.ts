@@ -11,7 +11,11 @@ export async function assignIconsForNewExtracts(
 ): Promise<PlaylistTrack[]> {
   const indexes = new Set(
     plan.tracks
-      .filter(action => action.kind === 'extract-youtube' || action.kind === 'extract-local')
+      .filter(action =>
+        action.kind === 'extract-youtube'
+        || action.kind === 'extract-local'
+        || action.kind === 'extract-soundcloud',
+      )
       .map(action => action.playlistIndex),
   )
   const needsIcon = [...indexes].some((index) => {

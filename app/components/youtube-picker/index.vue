@@ -15,7 +15,9 @@ import { videosToPlaylistTracks } from '~/components/playlist/types'
 import { classifyInsertTracksOutcome } from '#shared/myo-editor/standalonePlaylist'
 import { localAudioExtension, planLocalAudioTracks } from '#shared/myo-editor/localAudio'
 import { getSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
-import { classifyYoutubeSearchInput, youtubeSearchAction } from '#shared/myo-editor/youtubeUrl'
+import { classifyYoutubeSearchInput } from '#shared/myo-editor/youtubeUrl'
+import { mediaSearchAction } from '#shared/myo-editor/mediaLink'
+import { soundcloudListingToTracks, type SoundcloudListing } from '#shared/myo-editor/soundcloudTracks'
 import { uploadLocalAudio } from '~/utils/uploadLocalAudio'
 import type { PlaylistTrack } from '#shared/myo-editor/types'
 import type { YoutubeVideoSummary } from './types'
@@ -86,7 +88,7 @@ const addingFiles = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 
 const searchAction = computed(() =>
-  youtubeSearchAction(query.value, Boolean(submittedQuery.value.trim())),
+  mediaSearchAction(query.value, Boolean(submittedQuery.value.trim())),
 )
 
 watch(errorMessage, (msg, prev) => {
@@ -235,9 +237,75 @@ async function onLocalFiles(event: Event) {
   }
 }
 
+function linkError(err: unknown, fallback: string): string {
+  const e = err as { data?: { statusMessage?: string, message?: string }, statusMessage?: string, message?: string }
+  return e.data?.statusMessage || e.data?.message || e.statusMessage || e.message || fallback
+}
+
+async function onAddSpotify() {
+  const url = query.value.trim()
+  try {
+    const data = await $fetch<{
+      title: string
+      videos: YoutubeVideoSummary[]
+      unmatched: string[]
+      truncated: boolean
+    }>('/api/spotify/resolve', { query: { url } })
+    if (!data.videos?.length) {
+      showError('Nothing in that Spotify link matched a YouTube video.')
+      return
+    }
+    const keepLink = !editor?.canAcceptTracks.value
+    commitVideos(data.videos, { truncated: data.truncated, playlistTitle: data.title })
+    if (!keepLink) query.value = ''
+    if (!keepLink && data.unmatched?.length) {
+      const sample = data.unmatched.slice(0, 3).join(', ')
+      const extra = data.unmatched.length > 3 ? ` and ${data.unmatched.length - 3} more` : ''
+      showError(`No YouTube match for ${sample}${extra}.`, 8000, 'Spotify')
+    }
+  }
+  catch (err) {
+    showError(linkError(err, 'Could not read that Spotify link.'), 6000, 'Spotify')
+  }
+}
+
+async function onAddSoundcloud() {
+  const url = query.value.trim()
+  try {
+    const data = await $fetch<SoundcloudListing>('/api/soundcloud/resolve', { query: { url } })
+    const tracks = soundcloudListingToTracks(data.tracks ?? [], getSplitTargetSeconds())
+    if (tracks.length === 0) {
+      showError('Nothing in that SoundCloud link can be added.')
+      return
+    }
+    const keepLink = !editor?.canAcceptTracks.value
+    commitTracks(tracks, {
+      truncated: data.truncated,
+      playlistTitle: data.title,
+      addedLabel: tracks.length === 1 ? (tracks[0]?.title ?? 'Track') : `${tracks.length} tracks`,
+      duplicateLabel: tracks[0]?.title ?? 'Track',
+    })
+    if (!keepLink) query.value = ''
+  }
+  catch (err) {
+    showError(linkError(err, 'Could not read that SoundCloud link.'), 6000, 'SoundCloud')
+  }
+}
+
 async function onSearchSubmit() {
   if (adding.value || status.value === 'loading') return
   const intent = searchAction.value.kind
+  if ((intent === 'add-spotify' || intent === 'add-soundcloud') && editor) {
+    adding.value = true
+    try {
+      if (intent === 'add-spotify') await onAddSpotify()
+      else await onAddSoundcloud()
+    }
+    finally {
+      adding.value = false
+    }
+    return
+  }
   if ((intent === 'add-video' || intent === 'add-playlist') && editor) {
     adding.value = true
     try {
@@ -323,7 +391,7 @@ onUnmounted(() => {
         :placeholders="searchPlaceholders"
         :embedded="embedded"
         :clearable="Boolean(submittedQuery.trim())"
-        :action="searchAction"
+        :action="adding ? { ...searchAction, label: 'Adding…', ariaLabel: 'Adding this link' } : searchAction"
         @submit="onSearchSubmit"
         @clear="onClearSearch"
       />

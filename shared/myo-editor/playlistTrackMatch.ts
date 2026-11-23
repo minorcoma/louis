@@ -19,6 +19,8 @@ export function playlistHasYoutubeVideo(playlist: PlaylistTrack[], youtubeId: st
 /** Same playlist row id, or the same YouTube video already on the card. */
 export function playlistHasTrack(playlist: PlaylistTrack[], track: PlaylistTrack): boolean {
   if (playlist.some(item => item.id === track.id)) return true
+  const soundcloudId = track.soundcloud?.id?.trim()
+  if (soundcloudId && playlist.some(item => item.soundcloud?.id === soundcloudId)) return true
   const youtubeId = playlistTrackYoutubeId(track)
   if (!youtubeId) return false
   return playlistHasYoutubeVideo(playlist, youtubeId)

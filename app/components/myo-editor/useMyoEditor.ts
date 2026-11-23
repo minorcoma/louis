@@ -228,6 +228,7 @@ function clonePlaylist(playlist: PlaylistTrack[]): PlaylistTrack[] {
     split: item.split ? { ...item.split } : item.split,
     trim: item.trim ? { ...item.trim } : item.trim,
     localFile: item.localFile ? { ...item.localFile } : item.localFile,
+    soundcloud: item.soundcloud ? { ...item.soundcloud } : item.soundcloud,
   }))
 }
 

@@ -71,6 +71,13 @@ export function resolveClientSaveTarget(target: ClientSaveTarget): ClientSaveIde
   }
 }
 
+export function isSupportedSoundcloudTrack(track: PlaylistTrack): boolean {
+  if (!track || track.source !== 'soundcloud') return false
+  const id = track.soundcloud?.id?.trim() ?? ''
+  const url = track.soundcloud?.url?.trim() ?? ''
+  return /^\d{1,20}$/.test(id) && url.startsWith('https://soundcloud.com/')
+}
+
 export function isSupportedYoutubeTrack(track: PlaylistTrack): boolean {
   if (!track || typeof track !== 'object') return false
   if (track.source !== 'app-youtube' && track.source !== 'youtube-url') return false
@@ -88,8 +95,12 @@ export function getStandalonePlaylistCreateError(
   if (!title.trim()) {
     return 'Give this playlist a title before creating it.'
   }
-  if (playlist.some(track => !isSupportedYoutubeTrack(track) && !isSupportedLocalAudioTrack(track))) {
-    return 'New playlists can only include YouTube tracks and MP3 or M4B files.'
+  if (playlist.some(track =>
+    !isSupportedYoutubeTrack(track)
+    && !isSupportedLocalAudioTrack(track)
+    && !isSupportedSoundcloudTrack(track),
+  )) {
+    return 'New playlists can only include YouTube tracks, SoundCloud tracks, and MP3 or M4B files.'
   }
   return null
 }

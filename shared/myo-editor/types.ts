@@ -1,10 +1,17 @@
 export type TrackSource =
   | 'app-youtube'
   | 'youtube-url'
+  | 'soundcloud'
   | 'local-file'
   | 'yoto-upload'
   | 'stream'
   | 'unknown'
+
+/** A SoundCloud track Louis downloads on save. */
+export interface SoundcloudAudio {
+  id: string
+  url: string
+}
 
 /** A file uploaded to this Louis server, and the slice this row plays. */
 export interface LocalAudioFile {
@@ -115,6 +122,8 @@ export interface PlaylistTrack {
   }
   /** Present when this row was added from an MP3 or M4B on this server. */
   localFile?: LocalAudioFile
+  /** Present when this row was added from a SoundCloud link. */
+  soundcloud?: SoundcloudAudio
 }
 
 export interface ProvenanceTrackEntry {
@@ -145,6 +154,7 @@ export interface TranscodedAudioResult {
 
 export type SaveTrackAction =
   | { kind: 'extract-youtube'; youtubeId: string; playlistIndex: number; split?: TrackSplit }
+  | { kind: 'extract-soundcloud'; soundcloudId: string; url: string; playlistIndex: number; split?: TrackSplit }
   | { kind: 'extract-local'; uploadId: string; playlistIndex: number }
   | { kind: 'reuse-yoto'; snapshot: YotoTrackReuseSnapshot; playlistIndex: number }
   | { kind: 'passthrough-stream'; snapshot: YotoTrackReuseSnapshot; playlistIndex: number }

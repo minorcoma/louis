@@ -102,7 +102,7 @@ describe('standalone playlist drafts', () => {
         ...youtubeTrack(),
         source: 'yoto-upload',
       }]),
-      'New playlists can only include YouTube tracks and MP3 or M4B files.',
+      'New playlists can only include YouTube tracks, SoundCloud tracks, and MP3 or M4B files.',
     )
   })
 

@@ -16,11 +16,11 @@ Demo:
 
 [Website](https://louis.romanek.us/) · [Download](#download-desktop) · [Docker](#docker) · [Home Assistant](#home-assistant) · [Hosting](docs/HOSTING.md) · [Desktop docs](docs/DESKTOP.md) · [Contributing](CONTRIBUTING.md) · [Releases](docs/RELEASE.md)
 
-**Personal use only.** You are responsible for complying with [YouTube’s Terms of Service](https://www.youtube.com/t/terms) and applicable law when downloading audio.
+**Personal use only.** You are responsible for complying with [YouTube’s Terms of Service](https://www.youtube.com/t/terms), [SoundCloud’s Terms of Use](https://soundcloud.com/terms-of-use), and applicable law when downloading audio.
 
 ## Features
 
-- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together. **Add MP3 or M4B** reads a file on this computer; an M4B becomes one track per chapter
+- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together. A Spotify track, album, or playlist link is matched to YouTube audio (Louis does not download from Spotify). A SoundCloud track or playlist link is downloaded on Update. **Add MP3 or M4B** reads a file on this computer; an M4B becomes one track per chapter
 - New tracks get a different picture from Yoto’s public icons, instead of every chapter sharing one default
 - **Settings → General** sets split length (default 15 minutes, short leftovers folded in) and audio quality (default Standard / 96 kbps, so a chapter stays under Yoto’s 100 MB limit)
 - Browse your Yoto playlists. **New** names a playlist and creates it on Yoto right away (empty, or with tracks already picked in Search)

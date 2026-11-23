@@ -12,6 +12,29 @@ function youtubeIdForTrack(track: PlaylistTrack): string | undefined {
   return trimmed || undefined
 }
 
+function soundcloudIdForTrack(track: PlaylistTrack): string | undefined {
+  const id = track.soundcloud?.id?.trim()
+  return id || undefined
+}
+
+function duplicateSoundcloudError(playlist: PlaylistTrack[]): string | null {
+  const byId = new Map<string, PlaylistTrack[]>()
+  for (const track of playlist) {
+    const id = soundcloudIdForTrack(track)
+    if (!id) continue
+    const list = byId.get(id) ?? []
+    list.push(track)
+    byId.set(id, list)
+  }
+
+  for (const [id, tracks] of byId) {
+    if (tracks.length === 1) continue
+    if (isCompleteSplitCopy(tracks)) continue
+    return `Duplicate SoundCloud track in playlist: ${id}`
+  }
+  return null
+}
+
 function duplicateYoutubeError(playlist: PlaylistTrack[]): string | null {
   const byId = new Map<string, PlaylistTrack[]>()
   for (const track of playlist) {
@@ -99,6 +122,25 @@ function classifyTrack(
     }
   }
 
+  if (track.source === 'soundcloud') {
+    const soundcloudId = soundcloudIdForTrack(track)
+    const url = track.soundcloud?.url?.trim()
+    if (!soundcloudId || !url) {
+      return {
+        kind: 'unsupported',
+        reason: `SoundCloud track "${track.title}" is missing its link. Add it again.`,
+        playlistIndex: index,
+      }
+    }
+    return {
+      kind: 'extract-soundcloud',
+      soundcloudId,
+      url,
+      playlistIndex: index,
+      split: track.split,
+    }
+  }
+
   const youtubeId = track.youtubeId ?? (track.source === 'app-youtube' ? track.id : undefined)
 
   if (track.source === 'youtube-url') {
@@ -150,7 +192,7 @@ export function buildSavePlan(
     return { tracks: [], errors }
   }
 
-  const duplicateError = duplicateYoutubeError(playlist)
+  const duplicateError = duplicateYoutubeError(playlist) ?? duplicateSoundcloudError(playlist)
   if (duplicateError) errors.push(duplicateError)
 
   const baselineIds = baselineRowIds(baselinePlaylist)
@@ -186,6 +228,8 @@ export function playlistSaveExtractsYoutube(
 ): boolean {
   const plan = buildSavePlan(baselinePlaylist, playlist, detail ?? EMPTY_CARD_DETAIL)
   return plan.tracks.some(action =>
-    action.kind === 'extract-youtube' || action.kind === 'extract-local',
+    action.kind === 'extract-youtube'
+    || action.kind === 'extract-local'
+    || action.kind === 'extract-soundcloud',
   )
 }

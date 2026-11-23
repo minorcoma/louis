@@ -122,7 +122,7 @@ export function parseYoutubeChannelUrl(value: string): Extract<YoutubeSearchInte
 }
 
 export type YoutubeSearchAction = {
-  kind: 'add-video' | 'add-playlist' | 'search' | 'clear'
+  kind: 'add-video' | 'add-playlist' | 'add-spotify' | 'add-soundcloud' | 'search' | 'clear'
   label: string
   ariaLabel: string
 }
