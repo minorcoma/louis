@@ -19,6 +19,7 @@ import { classifyYoutubeSearchInput } from '#shared/myo-editor/youtubeUrl'
 import { mediaSearchAction } from '#shared/myo-editor/mediaLink'
 import { soundcloudListingToTracks, type SoundcloudListing } from '#shared/myo-editor/soundcloudTracks'
 import { uploadLocalAudio } from '~/utils/uploadLocalAudio'
+import type { SearchSource } from '#shared/myo-editor/soundcloudSearch'
 import type { PlaylistTrack } from '#shared/myo-editor/types'
 import type { YoutubeVideoSummary } from './types'
 
@@ -47,6 +48,7 @@ const {
 
 const SEARCH_SOURCE_OPTIONS = [
   { id: 'youtube', label: 'YouTube' },
+  { id: 'youtube-music', label: 'YouTube Music' },
   { id: 'soundcloud', label: 'SoundCloud' },
 ] as const
 const searchPlaceholders = computed(
@@ -87,7 +89,7 @@ const {
   toggleSelectAll,
 } = useYoutubePicker(props.maxResults)
 
-function onToggleSearchSource(source: 'youtube' | 'soundcloud', event: Event) {
+function onToggleSearchSource(source: SearchSource, event: Event) {
   const input = event.target as HTMLInputElement
   const before = searchSources.value.join(',')
   setSearchSource(source, input.checked)

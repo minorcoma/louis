@@ -290,6 +290,11 @@
   vertical-align: 0.05em;
 }
 
+.yt-result-source--ytmusic {
+  background: #ff4e45;
+  color: var(--color-maru-white);
+}
+
 .yt-result-card__meta {
   margin: 0.4rem 0 0;
   font-weight: 500;

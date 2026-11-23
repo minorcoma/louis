@@ -202,7 +202,10 @@ const addLabel = computed(() => {
             <span
               v-if="video.soundcloud"
               class="yt-result-source type-caption font-maru-medium"
-            >SoundCloud</span>{{ video.channelTitle }}
+            >SoundCloud</span><span
+              v-else-if="video.youtubeMusic"
+              class="yt-result-source yt-result-source--ytmusic type-caption font-maru-medium"
+            >YT Music</span>{{ video.channelTitle }}
           </p>
         </button>
       </div>
@@ -310,7 +313,10 @@ const addLabel = computed(() => {
             <span
               v-if="video.soundcloud"
               class="yt-result-source type-caption font-maru-medium"
-            >SoundCloud</span>{{ video.channelTitle }}
+            >SoundCloud</span><span
+              v-else-if="video.youtubeMusic"
+              class="yt-result-source yt-result-source--ytmusic type-caption font-maru-medium"
+            >YT Music</span>{{ video.channelTitle }}
           </p>
         </button>
         <div class="pt-2">

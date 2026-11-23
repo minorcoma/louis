@@ -16,6 +16,7 @@ import {
 import { videosToPlaylistTracks } from '~/components/playlist/types'
 import { YOTO_MYO_MAX_TRACKS } from '#shared/myo-editor/yotoMyoLimits'
 import {
+  dedupeResultsById,
   interleaveResults,
   type SearchSource,
   type SoundcloudSearchItem,
@@ -57,6 +58,7 @@ export function useYoutubePicker(maxResults = 12) {
   const { searchSources } = useUserPreferences()
   /** Per-source cursors for typed search; nextPageToken is just "more exists". */
   let youtubeNextToken: string | undefined
+  let youtubeMusicNextPage: number | undefined
   let soundcloudNextPage: number | undefined
   let lastSourcesKey = ''
 
@@ -448,10 +450,11 @@ export function useYoutubePicker(maxResults = 12) {
       try {
         const page = await fetchTextPage(q, sources, {
           youtubeToken: youtubeNextToken,
+          youtubeMusicPage: youtubeMusicNextPage,
           soundcloudPage: soundcloudNextPage,
           more: true,
         })
-        results.value = [...results.value, ...page.items]
+        results.value = dedupeResultsById([...results.value, ...page.items])
         playEvent('loadMoreComplete')
         if (page.error && page.items.length === 0) errorMessage.value = page.error
       }
@@ -485,6 +488,7 @@ export function useYoutubePicker(maxResults = 12) {
     results.value = []
     nextPageToken.value = undefined
     youtubeNextToken = undefined
+    youtubeMusicNextPage = undefined
     soundcloudNextPage = undefined
     clearResultSelection()
 
@@ -514,17 +518,25 @@ export function useYoutubePicker(maxResults = 12) {
   async function fetchTextPage(
     q: string,
     sources: SearchSource[],
-    cursor: { youtubeToken?: string, soundcloudPage?: number, more: boolean },
+    cursor: { youtubeToken?: string, youtubeMusicPage?: number, soundcloudPage?: number, more: boolean },
     stillCurrent: () => boolean = () => true,
   ): Promise<{ items: YoutubeVideoSummary[], error?: string }> {
     const wantYoutube = sources.includes('youtube') && (!cursor.more || Boolean(cursor.youtubeToken))
+    const wantYoutubeMusic = sources.includes('youtube-music')
+      && (!cursor.more || cursor.youtubeMusicPage !== undefined)
     const wantSoundcloud = sources.includes('soundcloud')
       && (!cursor.more || cursor.soundcloudPage !== undefined)
 
-    const [youtube, soundcloud] = await Promise.allSettled([
+    type PagedItems = { items: YoutubeVideoSummary[], nextPage?: number }
+    const [youtube, youtubeMusic, soundcloud] = await Promise.allSettled([
       wantYoutube
         ? $fetch<YoutubeSearchResponse>('/api/youtube/search', {
             query: { q, maxResults, pageToken: cursor.more ? cursor.youtubeToken : undefined },
+          })
+        : Promise.resolve(null),
+      wantYoutubeMusic
+        ? $fetch<PagedItems>('/api/youtube/music-search', {
+            query: { q, maxResults, page: cursor.more ? cursor.youtubeMusicPage : 0 },
           })
         : Promise.resolve(null),
       wantSoundcloud
@@ -537,18 +549,29 @@ export function useYoutubePicker(maxResults = 12) {
 
     const lists: YoutubeVideoSummary[][] = []
     let error: string | undefined
+    const fail = (reason: unknown, fallback: string) => {
+      error ??= fetchErrorMessage(reason, fallback)
+    }
+
     if (youtube.status === 'fulfilled') {
       if (youtube.value) {
         lists.push(listableYoutubeSearchResults(youtube.value.items))
         youtubeNextToken = youtube.value.nextPageToken
       }
-      else if (cursor.more) {
-        youtubeNextToken = undefined
-      }
     }
     else {
       youtubeNextToken = undefined
-      error = fetchErrorMessage(youtube.reason, 'YouTube search failed')
+      fail(youtube.reason, 'YouTube search failed')
+    }
+    if (youtubeMusic.status === 'fulfilled') {
+      if (youtubeMusic.value) {
+        lists.push(listableYoutubeSearchResults(youtubeMusic.value.items))
+        youtubeMusicNextPage = youtubeMusic.value.nextPage
+      }
+    }
+    else {
+      youtubeMusicNextPage = undefined
+      fail(youtubeMusic.reason, 'YouTube Music search failed')
     }
     if (soundcloud.status === 'fulfilled') {
       if (soundcloud.value) {
@@ -558,12 +581,19 @@ export function useYoutubePicker(maxResults = 12) {
     }
     else {
       soundcloudNextPage = undefined
-      error ??= fetchErrorMessage(soundcloud.reason, 'SoundCloud search failed')
+      fail(soundcloud.reason, 'SoundCloud search failed')
     }
+
     if (!sources.includes('youtube')) youtubeNextToken = undefined
+    if (!sources.includes('youtube-music')) youtubeMusicNextPage = undefined
     if (!sources.includes('soundcloud')) soundcloudNextPage = undefined
-    nextPageToken.value = youtubeNextToken || soundcloudNextPage !== undefined ? 'more' : undefined
-    return { items: interleaveResults(lists), error }
+    nextPageToken.value = youtubeNextToken
+      || youtubeMusicNextPage !== undefined
+      || soundcloudNextPage !== undefined
+      ? 'more'
+      : undefined
+    // The same video can come back from YouTube and YouTube Music; keep the first.
+    return { items: dedupeResultsById(interleaveResults(lists)), error }
   }
 
   async function loadMore() {

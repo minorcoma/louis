@@ -10,6 +10,7 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
+- **YouTube Music** search checkbox. Searches YouTube Music's Songs tab (official studio tracks rather than music videos or covers) through yt-dlp; details come from a videos lookup (1 Data API unit per 50 tracks with a key). Results are tagged YT Music and save like any YouTube track; a video also in the YouTube results shows once.
 - **Search: YouTube / SoundCloud** checkboxes under the search box. Typed searches query the checked sites and interleave the results; SoundCloud results carry a SoundCloud tag and are downloaded on Update. The choice is remembered.
 - **Find icon for me** in a track's icon editor, and **Find icon** in the phone track menu, pick and apply an icon for one track.
 - When one video can't be downloaded during Update, a toast names it and offers **Retry** or **Remove & update** (all its parts), instead of failing with only the video id.

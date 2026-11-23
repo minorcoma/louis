@@ -1,7 +1,7 @@
 /** Search source toggles in the picker. Spotify stays link-only (no keyless search). */
-export type SearchSource = 'youtube' | 'soundcloud'
+export type SearchSource = 'youtube' | 'youtube-music' | 'soundcloud'
 
-export const SEARCH_SOURCES: readonly SearchSource[] = ['youtube', 'soundcloud']
+export const SEARCH_SOURCES: readonly SearchSource[] = ['youtube', 'youtube-music', 'soundcloud']
 
 export const DEFAULT_SEARCH_SOURCES: readonly SearchSource[] = ['youtube']
 
@@ -104,4 +104,14 @@ export function interleaveResults<T>(lists: ReadonlyArray<readonly T[]>): T[] {
     }
   }
   return out
+}
+
+/** Drop later rows whose id already appeared (YouTube and YouTube Music share ids). */
+export function dedupeResultsById<T extends { id: string }>(items: readonly T[]): T[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
 }

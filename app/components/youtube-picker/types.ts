@@ -17,6 +17,8 @@ export type YoutubeVideoSummary = Omit<YoutubeVideo, 'description'> & {
   resultKey?: string
   /** Set on SoundCloud search hits; `id` is then `sc:<trackId>`, not a YouTube id. */
   soundcloud?: { id: string, url: string }
+  /** Found through YouTube Music search (still a normal YouTube video id). */
+  youtubeMusic?: boolean
 }
 
 export interface YoutubeSearchResponse {

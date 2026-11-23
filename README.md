@@ -20,7 +20,7 @@ Demo:
 
 ## Features
 
-- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. **Search: YouTube / SoundCloud** checkboxes under the search box choose which sites typed searches use (results interleave; SoundCloud needs no key). Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together
+- Search YouTube and preview audio — **YouTube Data API** when configured (faster typed search, optional content filtering), otherwise bundled **yt-dlp**. **Search: YouTube / YouTube Music / SoundCloud** checkboxes under the search box choose which sites typed searches use (results interleave; a video found on both YouTube and YouTube Music shows once). YouTube Music searches its Songs tab, which favours official studio tracks over music videos and covers. Neither YouTube Music nor SoundCloud search needs a key. Paste a video URL and choose **Add**, or a playlist URL and choose **Add all**. A channel URL still loads for review; check rows to add them together
 - A Spotify track, album, or playlist link is matched to YouTube audio (Louis does not download from Spotify). Matching always uses yt-dlp search, never the Data API, so a long playlist doesn't use up your API quota. A SoundCloud track or playlist link is downloaded on Update
 - **Add MP3 or M4B** uploads a file from this computer; an M4B becomes one track per chapter. Uploads are kept on the server until `LOUIS_AUDIO_CACHE_MAX_AGE_MS` passes
 - If one video can't be downloaded during Update, a toast names it and offers **Retry** or **Remove & update**
@@ -182,7 +182,7 @@ A YouTube Data API v3 key is **recommended** for faster search and `safeSearch=m
 
 Search still works without a key (bundled yt-dlp): slower, no safeSearch, and search can break on a different week than download. Leave `LOUIS_YOUTUBE_API_KEY` unset to use that path.
 
-Each Data API search costs 100 of the default 10,000 daily quota units. Typed YouTube searches and video lookups use the key; Spotify matching and SoundCloud search never do. When the quota runs out, search falls back to yt-dlp until it resets.
+Each Data API search costs 100 of the default 10,000 daily quota units. Typed YouTube searches and video lookups use the key; Spotify matching and SoundCloud search never do. YouTube Music search runs through yt-dlp and only uses the key to fill in track details (1 unit per 50 tracks). When the quota runs out, search falls back to yt-dlp until it resets.
 
 ### 3. Environment
 
