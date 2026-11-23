@@ -6,12 +6,13 @@ export interface CoverSearchHit {
   imageUrl: string
 }
 
-/** Search phrase for a playlist cover: the card name plus the word cover. */
+/**
+ * Search phrase for a playlist cover: the card name as-is. iTunes matches
+ * words in album/book titles, so adding "cover" pulls in cover-song singles
+ * ("Frozen cover") or finds nothing ("Gruffalo cover").
+ */
 export function coverSearchQuery(cardTitle: string): string {
-  const name = cardTitle.trim().replace(/\s+/g, ' ')
-  if (!name) return ''
-  if (/\bcovers?\b/i.test(name)) return name
-  return `${name} cover`
+  return cardTitle.trim().replace(/\s+/g, ' ')
 }
 
 /** Apple artwork URL, rewritten to a square size. Rejects anything else. */

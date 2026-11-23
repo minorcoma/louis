@@ -5,8 +5,8 @@ import { appleArtworkUrl, coverSearchQuery, coversFromItunesPayload } from './co
 const ART = 'https://is1-ssl.mzstatic.com/image/thumb/Music/abc/cover.jpg/100x100bb.jpg'
 
 describe('cover search', () => {
-  it('adds the word cover to the card name', () => {
-    assert.equal(coverSearchQuery('  Ocean   stories '), 'Ocean stories cover')
+  it('searches the card name as-is (no "cover" suffix)', () => {
+    assert.equal(coverSearchQuery('  Ocean   stories '), 'Ocean stories')
     assert.equal(coverSearchQuery('Best covers'), 'Best covers')
     assert.equal(coverSearchQuery('   '), '')
   })
