@@ -39,7 +39,16 @@ const DEFAULT_SEARCH_PLACEHOLDERS = [
 ]
 
 const appConfig = useAppConfig()
-const { searchPlaceholders: preferredPlaceholders } = useUserPreferences()
+const {
+  searchPlaceholders: preferredPlaceholders,
+  searchSources,
+  setSearchSource,
+} = useUserPreferences()
+
+const SEARCH_SOURCE_OPTIONS = [
+  { id: 'youtube', label: 'YouTube' },
+  { id: 'soundcloud', label: 'SoundCloud' },
+] as const
 const searchPlaceholders = computed(
   () => preferredPlaceholders.value
     ?? props.placeholders
@@ -77,6 +86,21 @@ const {
   searchSource,
   toggleSelectAll,
 } = useYoutubePicker(props.maxResults)
+
+function onToggleSearchSource(source: 'youtube' | 'soundcloud', event: Event) {
+  const input = event.target as HTMLInputElement
+  const before = searchSources.value.join(',')
+  setSearchSource(source, input.checked)
+  // The last checked source can't be turned off; put the box back.
+  input.checked = searchSources.value.includes(source)
+  if (searchSources.value.join(',') === before) return
+  playEvent(input.checked ? 'toggleOn' : 'toggleOff')
+  // Re-run a typed search so the results match the boxes.
+  if (searchSource.value === 'text' && submittedQuery.value.trim() && status.value !== 'loading') {
+    query.value = submittedQuery.value
+    void search()
+  }
+}
 
 provide(YOUTUBE_PICKER_RESULTS_KEY, results)
 
@@ -395,6 +419,33 @@ onUnmounted(() => {
         @submit="onSearchSubmit"
         @clear="onClearSearch"
       />
+      <fieldset class="search-sources mt-2">
+        <legend class="sr-only">Search on</legend>
+        <span
+          class="search-sources__label type-caption font-maru-medium"
+          aria-hidden="true"
+        >Search</span>
+        <label
+          v-for="option in SEARCH_SOURCE_OPTIONS"
+          :key="option.id"
+          class="search-sources__option maru-checkbox"
+        >
+          <input
+            type="checkbox"
+            class="maru-checkbox__input"
+            :checked="searchSources.includes(option.id)"
+            :disabled="searchSources.length === 1 && searchSources.includes(option.id)"
+            @change="onToggleSearchSource(option.id, $event)"
+          >
+          <span
+            class="maru-checkbox__box"
+            aria-hidden="true"
+          >
+            <span class="maru-checkbox__mark" />
+          </span>
+          <span class="type-meta">{{ option.label }}</span>
+        </label>
+      </fieldset>
       <button
         type="button"
         class="maru-button maru-button--sm bg-maru-yellow-light text-maru-black mt-2 w-full"

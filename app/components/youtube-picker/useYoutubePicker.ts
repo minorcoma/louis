@@ -15,6 +15,11 @@ import {
 } from '#shared/myo-editor/youtubeUrl'
 import { videosToPlaylistTracks } from '~/components/playlist/types'
 import { YOTO_MYO_MAX_TRACKS } from '#shared/myo-editor/yotoMyoLimits'
+import {
+  interleaveResults,
+  type SearchSource,
+  type SoundcloudSearchItem,
+} from '#shared/myo-editor/soundcloudSearch'
 
 const MIN_SEARCH_LOADING_MS = 2000
 
@@ -49,6 +54,11 @@ export function useYoutubePicker(maxResults = 12) {
   const channelSummary = ref<YoutubeChannelSummary | null>(null)
   const activeChannelId = ref<string | null>(null)
   const searchSource = ref<YoutubePickerSource>('text')
+  const { searchSources } = useUserPreferences()
+  /** Per-source cursors for typed search; nextPageToken is just "more exists". */
+  let youtubeNextToken: string | undefined
+  let soundcloudNextPage: number | undefined
+  let lastSourcesKey = ''
 
   const videoCache = new Map<string, YoutubeVideo>()
 
@@ -430,72 +440,130 @@ export function useYoutubePicker(maxResults = 12) {
       resetPasteState()
     }
 
+    const sources = [...searchSources.value]
+    const sourcesKey = sources.join(',')
+
     if (pageToken) {
       loadingMore.value = true
-    }
-    else {
-      if (
-        q === submittedQuery.value
-        && status.value === 'idle'
-        && results.value.length > 0
-        && searchSource.value === 'text'
-      ) {
-        return
-      }
-
-      submittedQuery.value = q
-      searchGeneration += 1
-      const generation = searchGeneration
-      const loadingStartedAt = Date.now()
-      status.value = 'loading'
-      errorMessage.value = ''
-      focusedIndex.value = -1
-      results.value = []
-      nextPageToken.value = undefined
-      clearResultSelection()
-
       try {
-        const data = await $fetch<YoutubeSearchResponse>('/api/youtube/search', {
-          query: { q, maxResults, pageToken },
+        const page = await fetchTextPage(q, sources, {
+          youtubeToken: youtubeNextToken,
+          soundcloudPage: soundcloudNextPage,
+          more: true,
         })
-
-        if (generation !== searchGeneration) return
-
-        results.value = listableYoutubeSearchResults(data.items)
-        nextPageToken.value = data.nextPageToken
-        await ensureMinLoadingTime(loadingStartedAt)
-        if (generation !== searchGeneration) return
-        status.value = 'idle'
+        results.value = [...results.value, ...page.items]
+        playEvent('loadMoreComplete')
+        if (page.error && page.items.length === 0) errorMessage.value = page.error
       }
       catch (err: unknown) {
-        if (generation !== searchGeneration) return
-        errorMessage.value = fetchErrorMessage(err, 'Search failed')
-        results.value = []
-        await ensureMinLoadingTime(loadingStartedAt)
-        if (generation !== searchGeneration) return
-        status.value = 'error'
+        errorMessage.value = fetchErrorMessage(err, 'Couldn\'t load more')
+      }
+      finally {
+        loadingMore.value = false
       }
       return
     }
 
+    if (
+      q === submittedQuery.value
+      && sourcesKey === lastSourcesKey
+      && status.value === 'idle'
+      && results.value.length > 0
+      && searchSource.value === 'text'
+    ) {
+      return
+    }
+
+    submittedQuery.value = q
+    lastSourcesKey = sourcesKey
+    searchGeneration += 1
+    const generation = searchGeneration
+    const loadingStartedAt = Date.now()
+    status.value = 'loading'
+    errorMessage.value = ''
+    focusedIndex.value = -1
+    results.value = []
+    nextPageToken.value = undefined
+    youtubeNextToken = undefined
+    soundcloudNextPage = undefined
+    clearResultSelection()
+
     try {
-      const data = await $fetch<YoutubeSearchResponse>('/api/youtube/search', {
-        query: { q, maxResults, pageToken },
-      })
-
-      if (pageToken) {
-        results.value = [...results.value, ...listableYoutubeSearchResults(data.items)]
-        playEvent('loadMoreComplete')
-      }
-
-      nextPageToken.value = data.nextPageToken
+      const page = await fetchTextPage(q, sources, { more: false }, () => generation === searchGeneration)
+      if (generation !== searchGeneration) return
+      if (page.items.length === 0 && page.error) throw new Error(page.error)
+      results.value = page.items
+      await ensureMinLoadingTime(loadingStartedAt)
+      if (generation !== searchGeneration) return
+      status.value = 'idle'
     }
     catch (err: unknown) {
-      errorMessage.value = fetchErrorMessage(err, 'Couldn\'t load more')
+      if (generation !== searchGeneration) return
+      errorMessage.value = fetchErrorMessage(err, 'Search failed')
+      results.value = []
+      await ensureMinLoadingTime(loadingStartedAt)
+      if (generation !== searchGeneration) return
+      status.value = 'error'
     }
-    finally {
-      loadingMore.value = false
+  }
+
+  /**
+   * One page of typed search from every checked source, interleaved. A source
+   * that fails is skipped as long as another one returned rows.
+   */
+  async function fetchTextPage(
+    q: string,
+    sources: SearchSource[],
+    cursor: { youtubeToken?: string, soundcloudPage?: number, more: boolean },
+    stillCurrent: () => boolean = () => true,
+  ): Promise<{ items: YoutubeVideoSummary[], error?: string }> {
+    const wantYoutube = sources.includes('youtube') && (!cursor.more || Boolean(cursor.youtubeToken))
+    const wantSoundcloud = sources.includes('soundcloud')
+      && (!cursor.more || cursor.soundcloudPage !== undefined)
+
+    const [youtube, soundcloud] = await Promise.allSettled([
+      wantYoutube
+        ? $fetch<YoutubeSearchResponse>('/api/youtube/search', {
+            query: { q, maxResults, pageToken: cursor.more ? cursor.youtubeToken : undefined },
+          })
+        : Promise.resolve(null),
+      wantSoundcloud
+        ? $fetch<{ items: SoundcloudSearchItem[], nextPage?: number }>('/api/soundcloud/search', {
+            query: { q, maxResults, page: cursor.more ? cursor.soundcloudPage : 0 },
+          })
+        : Promise.resolve(null),
+    ])
+    if (!stillCurrent()) return { items: [] }
+
+    const lists: YoutubeVideoSummary[][] = []
+    let error: string | undefined
+    if (youtube.status === 'fulfilled') {
+      if (youtube.value) {
+        lists.push(listableYoutubeSearchResults(youtube.value.items))
+        youtubeNextToken = youtube.value.nextPageToken
+      }
+      else if (cursor.more) {
+        youtubeNextToken = undefined
+      }
     }
+    else {
+      youtubeNextToken = undefined
+      error = fetchErrorMessage(youtube.reason, 'YouTube search failed')
+    }
+    if (soundcloud.status === 'fulfilled') {
+      if (soundcloud.value) {
+        lists.push(soundcloud.value.items)
+        soundcloudNextPage = soundcloud.value.nextPage
+      }
+    }
+    else {
+      soundcloudNextPage = undefined
+      error ??= fetchErrorMessage(soundcloud.reason, 'SoundCloud search failed')
+    }
+    if (!sources.includes('youtube')) youtubeNextToken = undefined
+    if (!sources.includes('soundcloud')) soundcloudNextPage = undefined
+    nextPageToken.value = youtubeNextToken || soundcloudNextPage !== undefined ? 'more' : undefined
+    return { items: interleaveResults(lists), error }
   }
 
   async function loadMore() {
@@ -517,7 +585,7 @@ export function useYoutubePicker(maxResults = 12) {
 
     focusedIndex.value = results.value.findIndex(v => v.id === id)
 
-    if (videoCache.has(id)) return
+    if (summary.soundcloud || videoCache.has(id)) return
 
     try {
       const data = await $fetch<{ items: YoutubeVideo[] }>('/api/youtube/videos', {

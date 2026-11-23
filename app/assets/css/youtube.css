@@ -278,6 +278,18 @@
   margin: 0;
 }
 
+.yt-result-source {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0 0.4rem;
+  border: 2px solid var(--color-maru-black);
+  border-radius: 999px;
+  background: #ff7a00;
+  color: var(--color-maru-black);
+  line-height: 1.35;
+  vertical-align: 0.05em;
+}
+
 .yt-result-card__meta {
   margin: 0.4rem 0 0;
   font-weight: 500;
@@ -578,3 +590,29 @@
   }
 }
 
+
+/* Typed-search source toggles under the search box. */
+.search-sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  margin-inline: 0;
+  padding: 0;
+  border: 0;
+}
+
+.search-sources__label {
+  opacity: 0.7;
+}
+
+.search-sources__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+.search-sources__option:has(input:disabled) {
+  cursor: default;
+}

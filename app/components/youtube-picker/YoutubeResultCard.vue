@@ -198,13 +198,20 @@ const addLabel = computed(() => {
           @click="emit('select', video.id)"
         >
           <p class="yt-result-card__title type-title font-maru-medium line-clamp-2">{{ video.title }}</p>
-          <p class="yt-result-card__meta type-meta text-maru-black/75">{{ video.channelTitle }}</p>
+          <p class="yt-result-card__meta type-meta text-maru-black/75">
+            <span
+              v-if="video.soundcloud"
+              class="yt-result-source type-caption font-maru-medium"
+            >SoundCloud</span>{{ video.channelTitle }}
+          </p>
         </button>
       </div>
 
       <div class="yt-result-card__actions">
         <div class="yt-result-card__audio">
+          <!-- Preview streams YouTube audio; SoundCloud rows have none. -->
           <YoutubePickerAudioControls
+            v-if="!video.soundcloud"
             :video-id="video.id"
             :duration-seconds="video.durationSeconds"
           />
@@ -299,10 +306,17 @@ const addLabel = computed(() => {
           @click="emit('select', video.id)"
         >
           <p class="yt-result-card__title type-title font-maru-medium line-clamp-2">{{ video.title }}</p>
-          <p class="yt-result-card__meta type-meta text-maru-black/75 mt-1.5">{{ video.channelTitle }}</p>
+          <p class="yt-result-card__meta type-meta text-maru-black/75 mt-1.5">
+            <span
+              v-if="video.soundcloud"
+              class="yt-result-source type-caption font-maru-medium"
+            >SoundCloud</span>{{ video.channelTitle }}
+          </p>
         </button>
         <div class="pt-2">
+          <!-- Preview streams YouTube audio; SoundCloud rows have none. -->
           <YoutubePickerAudioControls
+            v-if="!video.soundcloud"
             :video-id="video.id"
             :duration-seconds="video.durationSeconds"
           />

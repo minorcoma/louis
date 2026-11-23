@@ -1,12 +1,24 @@
 import type { YoutubeVideoSummary } from '~/components/youtube-picker/types'
 import { sanitizeYoutubeTitle } from '#shared/myo-editor/sanitizeYoutubeTitle'
 import { applySourceTrimAndSplit } from '#shared/myo-editor/splitTrack'
+import { getSplitTargetSeconds } from '#shared/myo-editor/splitTarget'
+import { soundcloudListingToTracks } from '#shared/myo-editor/soundcloudTracks'
 
 export type { PlaylistTrack } from '#shared/myo-editor/types'
 import type { PlaylistTrack } from '#shared/myo-editor/types'
 export { playlistHasTrack } from '#shared/myo-editor/playlistTrackMatch'
 
 export function pickerVideoToPlaylistTracks(video: YoutubeVideoSummary): PlaylistTrack[] {
+  if (video.soundcloud) {
+    return soundcloudListingToTracks([{
+      id: video.soundcloud.id,
+      title: video.title,
+      artist: video.channelTitle,
+      url: video.soundcloud.url,
+      thumbnailUrl: video.thumbnailUrl,
+      durationSeconds: video.durationSeconds ?? 0,
+    }], getSplitTargetSeconds())
+  }
   const title = sanitizeYoutubeTitle(video.title)
   const duration = typeof video.durationSeconds === 'number' && video.durationSeconds > 0
     ? video.durationSeconds

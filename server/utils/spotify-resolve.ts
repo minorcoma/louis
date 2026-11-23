@@ -122,9 +122,12 @@ export async function resolveSpotifyLink(event: H3Event, rawUrl: string): Promis
   let searchError: unknown = null
   const searches = await mapPool(listing.tracks, 4, async (track) => {
     try {
+      // yt-dlp only: one search per Spotify track would burn the Data API
+      // quota (100 units each) on a single album.
       const page = await discoverYoutubeSearch(event, {
         q: spotifyYoutubeQuery(track),
         maxResults: 5,
+        backend: 'ytdlp',
       })
       return page.items
     }

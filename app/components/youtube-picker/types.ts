@@ -15,6 +15,8 @@ export interface YoutubeVideo {
 export type YoutubeVideoSummary = Omit<YoutubeVideo, 'description'> & {
   /** Stable row id when the same video can appear more than once (playlist items). */
   resultKey?: string
+  /** Set on SoundCloud search hits; `id` is then `sc:<trackId>`, not a YouTube id. */
+  soundcloud?: { id: string, url: string }
 }
 
 export interface YoutubeSearchResponse {

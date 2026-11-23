@@ -35,13 +35,15 @@ export async function discoverYoutubeSearch(
     channelId?: string
     pageToken?: string
     maxResults: number
+    /** 'ytdlp' skips the Data API (search costs 100 quota units per call). */
+    backend?: 'auto' | 'ytdlp'
   },
 ): Promise<{
   items: YoutubeSearchVideoItem[]
   nextPageToken?: string
   prevPageToken?: string
 }> {
-  const apiKey = tryGetYoutubeApiKey(event)
+  const apiKey = options.backend === 'ytdlp' ? undefined : tryGetYoutubeApiKey(event)
   if (apiKey) {
     const safeSearch = tryGetYoutubeSafeSearch(event)
     try {

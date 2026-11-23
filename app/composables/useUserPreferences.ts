@@ -6,6 +6,11 @@ import {
   setSplitTargetSeconds,
 } from '#shared/myo-editor/splitTarget'
 import { YOTO_MYO_SPLIT_TRACK_SECONDS } from '#shared/myo-editor/yotoMyoLimits'
+import {
+  DEFAULT_SEARCH_SOURCES,
+  normalizeSearchSources,
+  type SearchSource,
+} from '#shared/myo-editor/soundcloudSearch'
 
 const STORAGE_KEY = 'yoto-cards:user-preferences'
 
@@ -21,6 +26,8 @@ type StoredPrefs = {
   splitTargetMinutes?: number
   /** AAC bitrate such as `96k`. Absent = Standard. */
   audioBitrate?: string
+  /** Typed-search sources. Absent = YouTube only. */
+  searchSources?: SearchSource[]
 }
 
 const showDebugPanelStored = ref<boolean | null>(null)
@@ -30,6 +37,7 @@ const drawEditorSoundsStored = ref<boolean | null>(null)
 const trackArtIconSizeStored = ref<32 | 64 | null>(null)
 const splitTargetMinutesStored = ref<number | null>(null)
 const audioBitrateStored = ref<AudioBitrate | null>(null)
+const searchSourcesStored = ref<SearchSource[] | null>(null)
 
 let initialized = false
 
@@ -67,6 +75,9 @@ function persist() {
   if (audioBitrateStored.value !== null) {
     toSave.audioBitrate = audioBitrateStored.value
   }
+  if (searchSourcesStored.value !== null) {
+    toSave.searchSources = searchSourcesStored.value
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
 }
 
@@ -96,6 +107,9 @@ function ensureInitialized() {
   )
   if (typeof stored.audioBitrate === 'string') {
     audioBitrateStored.value = normalizeAudioBitrate(stored.audioBitrate)
+  }
+  if (Array.isArray(stored.searchSources)) {
+    searchSourcesStored.value = normalizeSearchSources(stored.searchSources)
   }
 }
 
@@ -180,7 +194,23 @@ export function useUserPreferences() {
     persist()
   }
 
+  const searchSources = computed<SearchSource[]>(() =>
+    searchSourcesStored.value ?? [...DEFAULT_SEARCH_SOURCES],
+  )
+
+  /** Turn one source on or off; the last checked source can't be turned off. */
+  function setSearchSource(source: SearchSource, enabled: boolean) {
+    const current = new Set(searchSources.value)
+    if (enabled) current.add(source)
+    else current.delete(source)
+    if (current.size === 0) return
+    searchSourcesStored.value = normalizeSearchSources([...current])
+    persist()
+  }
+
   return {
+    searchSources: readonly(searchSources),
+    setSearchSource,
     showDebugPanel,
     searchPlaceholders: readonly(searchPlaceholders),
     searchPlaceholdersText,
