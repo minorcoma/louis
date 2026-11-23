@@ -1,7 +1,9 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { isListableYoutubeSearchResult } from './youtubePlaylistImport.ts'
 import {
   interleaveResults,
+  isListablePickerResult,
   normalizeSearchSources,
   soundcloudSearchItemFromYtdlp,
 } from './soundcloudSearch.ts'
@@ -55,6 +57,16 @@ describe('soundcloud search', () => {
     assert.deepEqual(normalizeSearchSources(['soundcloud']), ['soundcloud'])
     assert.deepEqual(normalizeSearchSources([]), ['youtube'])
     assert.deepEqual(normalizeSearchSources('youtube'), ['youtube'])
+  })
+
+  it('lists SoundCloud rows that the YouTube-only check would hide', () => {
+    const row = soundcloudSearchItemFromYtdlp(ENTRY)!
+    assert.equal(isListableYoutubeSearchResult(row), false)
+    assert.equal(isListablePickerResult(row, isListableYoutubeSearchResult), true)
+    assert.equal(isListablePickerResult({ ...row, title: '' }, isListableYoutubeSearchResult), false)
+    const youtube = { id: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up', durationSeconds: 214 }
+    assert.equal(isListablePickerResult(youtube, isListableYoutubeSearchResult), true)
+    assert.equal(isListablePickerResult({ ...youtube, id: 'sc:1' }, isListableYoutubeSearchResult), false)
   })
 
   it('interleaves sources so neither buries the other', () => {

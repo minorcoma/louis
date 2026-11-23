@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { ResultsLayout, YoutubeVideoSummary } from './types'
 import YoutubeResultCard from './YoutubeResultCard.vue'
-import { listableYoutubeSearchResults, videoResultKey } from '#shared/myo-editor/youtubePlaylistImport'
+import { isListableYoutubeSearchResult, videoResultKey } from '#shared/myo-editor/youtubePlaylistImport'
+import { isListablePickerResult } from '#shared/myo-editor/soundcloudSearch'
 
 const props = withDefaults(defineProps<{
   results: YoutubeVideoSummary[]
@@ -19,7 +20,10 @@ const emit = defineEmits<{
   select: [id: string]
 }>()
 
-const listedResults = computed(() => listableYoutubeSearchResults(props.results))
+// SoundCloud rows (sc: ids) must not go through the YouTube-only check.
+const listedResults = computed(() =>
+  props.results.filter(video => isListablePickerResult(video, isListableYoutubeSearchResult)),
+)
 </script>
 
 <template>

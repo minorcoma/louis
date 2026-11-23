@@ -80,6 +80,19 @@ export function soundcloudSearchItemFromYtdlp(raw: unknown): SoundcloudSearchIte
   }
 }
 
+/**
+ * Whether a picker row should render. YouTube rows use the YouTube check
+ * (11-char video id, real title, known duration); SoundCloud rows have
+ * `sc:` ids that check would reject, so they only need a title.
+ */
+export function isListablePickerResult(
+  video: { id?: string, title?: string, durationSeconds?: number, soundcloud?: unknown },
+  isListableYoutube: (video: { id?: string, title?: string, durationSeconds?: number }) => boolean,
+): boolean {
+  if (video.soundcloud) return Boolean(video.title?.trim())
+  return isListableYoutube(video)
+}
+
 /** Alternate rows from each source so neither buries the other. */
 export function interleaveResults<T>(lists: ReadonlyArray<readonly T[]>): T[] {
   const out: T[] = []
