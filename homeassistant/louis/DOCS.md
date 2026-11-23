@@ -2,6 +2,8 @@
 
 Louis as a Supervisor add-on: same app as Docker/GHCR, configured via **Options** (no hand-edited `.env`).
 
+> The add-on runs upstream's published image (`ghcr.io/stuartromanek/louis`, see `Dockerfile`), not a build of the fork it's installed from, so fork-only features aren't included.
+
 ## Install
 
 1. **Settings → Apps → Install app → ⋮ → Repositories** (older releases call this **Add-ons → Add-on store**)

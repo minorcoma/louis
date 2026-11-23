@@ -4,6 +4,8 @@ One-click and guided installs for Docker on NAS, homelab, and LAN. Louis also sh
 
 **Image:** `stuartromanek/louis:latest` (or pin `stuartromanek/louis:vX.Y.Z`). Equivalent on GHCR: `ghcr.io/stuartromanek/louis`.
 
+> **This fork has no published image.** The Portainer template, CasaOS store, `docker pull`, and the Home Assistant add-on all run **upstream's** image, without this fork's changes. To run the fork, build from source — [README: Run this fork](../README.md#run-this-fork-build-from-source) — or use Coolify (below), which builds from the repository.
+
 ## Quick pick
 
 | You want… | Use |
@@ -16,7 +18,7 @@ One-click and guided installs for Docker on NAS, homelab, and LAN. Louis also sh
 ## Shared checklist (every Docker host)
 
 1. **Single instance only** — save progress is in memory; do not run multiple replicas.
-2. **Persistent volume** at `/data/audio` (preview/save cache, optional yt-dlp updates).
+2. **Persistent volume** at `/data/audio` (preview/save cache, uploaded MP3/M4B in `library/`, optional yt-dlp updates). Leave room for audiobook uploads (up to 1 GB each; kept for `LOUIS_AUDIO_CACHE_MAX_AGE_MS`).
 3. **Required env:** `LOUIS_YOTO_CLIENT_ID` (public PKCE client). Paste Louis’s bundled ID (`PK00MDKCVwWvOG8o3px3qSl57FhfUZxm`) only when your open-URL matches a redirect already on Louis’s Yoto app (desktop `127.0.0.1:4010`; HA default `homeassistant.local:4000`). For a NAS IP, custom hostname, or HTTPS domain, create your **own** public client at [yoto.dev](https://yoto.dev/get-started/start-here/) and register that exact callback — see root [README](../README.md#1-yoto-client-id).
 4. **Yoto redirect URI** — paste into yoto.dev **Allowed Callback URLs** on the app that owns your client ID (exact match):
    - Louis bundled: only the pre-registered desktop / HA-default URIs above
@@ -80,7 +82,7 @@ On Docker's default bridge network the container has no IPv6, so every YouTube r
 
 Uses the repo root [`docker-compose.yml`](../docker-compose.yml) — no separate bundle.
 
-1. **New resource** → **Public repository** → `https://github.com/stuartromanek/louis`
+1. **New resource** → **Public repository** → `https://github.com/minorcoma/louis` (builds this fork; use `stuartromanek/louis` for upstream)
 2. Build pack: **Docker Compose**, path `docker-compose.yml`
 3. Environment: `LOUIS_YOTO_CLIENT_ID` (required — own client for custom domain / host, or bundled ID only for pre-registered redirects); optional YouTube key
 4. Confirm volume **`louis-audio`** → `/data/audio`

@@ -1,7 +1,10 @@
 services:
   louis:
-    image: stuartromanek/louis:latest
-    # Equivalent: ghcr.io/stuartromanek/louis:latest
+    # Built from this checkout. Upstream's prebuilt image (stuartromanek/louis)
+    # lacks this fork's changes, so don't tag the local build with its name:
+    # a later `docker compose pull` would silently replace it.
+    image: louis:local
+    pull_policy: build
     build:
       context: .
       args:

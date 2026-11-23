@@ -10,6 +10,9 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 ## [Unreleased]
 
 ### Added
+- **Search: YouTube / SoundCloud** checkboxes under the search box. Typed searches query the checked sites and interleave the results; SoundCloud results carry a SoundCloud tag and are downloaded on Update. The choice is remembered.
+- **Find icon for me** in a track's icon editor, and **Find icon** in the phone track menu, pick and apply an icon for one track.
+- When one video can't be downloaded during Update, a toast names it and offers **Retry** or **Remove & update** (all its parts), instead of failing with only the video id.
 - **Spotify and SoundCloud links** in Search. A Spotify track, album, or playlist is matched to YouTube audio. A SoundCloud track or playlist is downloaded on Update. Choose **Add** or **Add all**, the same as a YouTube link.
 - **Find icons** on a playlist. It searches Yoto’s icons and yotoicons.com with the card name and each track title, then applies a different match.
 - **Search covers** in Artwork. It looks up album and book covers for the playlist name and lets you crop one.
@@ -20,11 +23,20 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 - **Settings → General → Audio quality** (default Standard, 96 kbps). Saves are re-encoded at that bitrate instead of copying YouTube’s file, which was landing over 100 MB and getting rejected. High is the old 192 kbps setting.
 
 ### Fixed
+- Find icons now gives far more tracks an icon: plurals match (dragons → dragon), numbers like “#26” are ignored, every track gets its own community search (was 6 words per playlist), title matches are assigned before card-name fallbacks, and icons are reused once unused matches run out. Tracks with no match are named.
+- Cover crops fill the 638×1011 frame instead of adding black bars, and a crop too big as PNG is re-encoded as JPEG instead of failing with “Cropped image is too large”.
+- Cover search uses the playlist name as-is. Adding “cover” returned cover-song singles (“Frozen cover”) or nothing (“Gruffalo cover”).
+- Playlist cards no longer bunch together in Firefox-based browsers (Zen, LibreWolf); card width is set from the row height instead of an intrinsic size Firefox resolved to ~0.
+- Production build: `uiSoundPlayer` imports `#shared/rewindLoadedAudio` (the relative `.ts` path broke the SSR bundle); `package.json` `imports` maps `#shared/*` so `node --test` resolves it too.
+- A save of only local MP3/M4B tracks no longer flips its status back to “downloading” after the uploads finish.
 - Home Assistant no longer drops the Louis repository. `youtube_safe_search` was a nested `name` / `select` map, which Supervisor reads as more options and then rejects, so the app never appeared in the store. The option is now `list(none|moderate|strict)`, with the label in `translations/en.yaml`.
 - Track Art stays on screen on a phone when the track title is long. The full-size flyout's grid column was growing to the nowrap title, which pushed the panel past the viewport and left Apply unreachable.
 - UI taps are silent on iOS when a clip is not loaded yet. Setting `currentTime` before the browser has metadata throws outside the `play()` catch on WebKit, which stuck that voice in the pool. Splash unlock also listens for `click`, which iOS counts as a user gesture (`pointerdown` does not).
 
 ### Changed
+- Spotify links are matched with yt-dlp search only. One Data API search per track (100 quota units each) could use the whole daily quota on one playlist.
+- yotoicons.com searches are cached for an hour, with a 15-second timeout.
+- Root `docker-compose.yml` tags the local build `louis:local` (`pull_policy: build`) instead of upstream's image name, so `docker compose pull` can't replace a fork build with upstream's image.
 - Portainer stack uses host networking so yt-dlp reaches YouTube over the host's IPv6. On Docker's default bridge the container was IPv4-only and went out through the household's shared NAT address, which YouTube blocked with "Sign in to confirm you're not a bot" even when the same network worked from a laptop. Louis now listens directly on host port 4000 (`LOUIS_PORT` to change). See [docs/HOSTING.md](docs/HOSTING.md#why-the-stack-uses-host-networking).
 - Portainer stack sets `pull_policy: always`, so redeploys fetch the current image instead of reusing a stale cached `latest` with an old yt-dlp.
 
