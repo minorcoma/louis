@@ -43,20 +43,49 @@ export function parseYotoiconsHtml(html: string): YotoiconsSearchItem[] {
   return results
 }
 
-export async function searchYotoicons(query: string): Promise<YotoiconsSearchItem[]> {
-  const tag = query.trim()
-  if (!tag) return []
+const SEARCH_CACHE_TTL_MS = 60 * 60 * 1000
+const SEARCH_CACHE_MAX = 500
+const SEARCH_TIMEOUT_MS = 15_000
+/** Find icons runs many tag searches; repeat runs shouldn't re-hit yotoicons.com. */
+const searchCache = new Map<string, { expiresAt: number, items: YotoiconsSearchItem[] }>()
+const searchInflight = new Map<string, Promise<YotoiconsSearchItem[]>>()
 
+async function fetchYotoicons(tag: string): Promise<YotoiconsSearchItem[]> {
   const url = `${YOTOICONS_BASE}/icons?tag=${encodeURIComponent(tag)}&type=singles&sort=popular`
   const res = await fetch(url, {
     headers: {
       Accept: 'text/html',
       'User-Agent': 'LouisYotoCards/1.0 (+https://github.com)',
     },
+    signal: AbortSignal.timeout(SEARCH_TIMEOUT_MS),
   })
   if (!res.ok) {
     throw new Error(`yotoicons.com returned ${res.status}`)
   }
   const html = await res.text()
   return parseYotoiconsHtml(html)
+}
+
+export async function searchYotoicons(query: string): Promise<YotoiconsSearchItem[]> {
+  const tag = query.trim()
+  if (!tag) return []
+  const key = tag.toLowerCase()
+
+  const cached = searchCache.get(key)
+  if (cached && cached.expiresAt > Date.now()) return cached.items
+  const pending = searchInflight.get(key)
+  if (pending) return pending
+
+  const promise = fetchYotoicons(tag)
+    .then((items) => {
+      if (searchCache.size >= SEARCH_CACHE_MAX) {
+        const oldest = searchCache.keys().next().value
+        if (oldest !== undefined) searchCache.delete(oldest)
+      }
+      searchCache.set(key, { expiresAt: Date.now() + SEARCH_CACHE_TTL_MS, items })
+      return items
+    })
+    .finally(() => searchInflight.delete(key))
+  searchInflight.set(key, promise)
+  return promise
 }

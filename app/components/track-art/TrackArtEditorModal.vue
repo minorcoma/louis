@@ -18,6 +18,8 @@ const trackId = defineModel<string | null>('trackId', { default: null })
 const editor = inject(MYO_EDITOR_KEY)
 const artShell = inject(TRACK_ART_EDITOR_KEY, null)
 const { playEvent } = useUiSound()
+const { showError } = useToast()
+const { finding: findingIcon, canFind, findIcons } = useFindIcons()
 
 const tab = ref<TrackArtTab>('icons')
 const prefersReducedMotion = ref(false)
@@ -220,6 +222,27 @@ function onApplied(payload: { icon16x16: string; previewUrl: string }) {
   ledFading.value = false
   ledPopping.value = true
   after(APPLY_SUCCESS_POP_MS, finish)
+}
+
+/** Auto-pick: search icons for this one track and apply the best match. */
+async function onFindIcon() {
+  if (!trackId.value || !canFind.value || findingIcon.value || applying.value) {
+    playEvent('disabled')
+    return
+  }
+  playEvent('buttonClick')
+  const result = await findIcons([trackId.value])
+  if (result.error === 'busy') return
+  if (result.applied > 0) {
+    playEvent('saveComplete')
+    beginClose()
+    return
+  }
+  showError(
+    result.error ?? 'No icon matched this track or the card name. Pick one below or draw one.',
+    6000,
+    'Find icon',
+  )
 }
 
 async function onApply() {
@@ -425,6 +448,16 @@ onUnmounted(() => {
       >
         {{ applyHint }}
       </p>
+      <button
+        v-if="canFind"
+        type="button"
+        class="panel-footer-btn panel-footer-btn--short panel-footer-btn--secondary shrink-0"
+        :disabled="findingIcon || applying"
+        aria-label="Find an icon for this track and apply it"
+        @click="onFindIcon"
+      >
+        <span class="panel-footer-btn__label">{{ findingIcon ? 'Finding…' : 'Find icon for me' }}</span>
+      </button>
       <button
         type="button"
         class="panel-footer-btn panel-footer-btn--short panel-footer-btn--primary shrink-0"

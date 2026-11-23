@@ -46,6 +46,8 @@ if (!yoto || !editor || !chrome) {
 }
 
 const { playEvent } = useUiSound()
+const { canFind: canFindIcons, finding: findingIcons, findIcons } = useFindIcons()
+const { showError: showFindIconError } = useToast()
 const saveProgressTestMode = useSaveProgressTestMode()
 const leftoverFixtures = useLeftoverOutcomeFixtures()
 const uncertainRefreshBusy = ref(false)
@@ -382,6 +384,20 @@ function onMenuMove(delta: number) {
   const index = trackMenuIndex.value
   if (index === null) return
   moveTrack(index, delta)
+}
+
+async function onMenuFindIcon() {
+  const track = menuTrack.value
+  if (!track || tracksLocked.value || !canFindIcons.value) return
+  trackMenuIndex.value = null
+  playEvent('buttonClick')
+  const result = await findIcons([track.id])
+  if (result.error === 'busy' || result.applied > 0) return
+  showFindIconError(
+    result.error ?? 'No icon matched this track or the card name. Tap its icon to pick one.',
+    6000,
+    'Find icon',
+  )
 }
 
 function onMenuTrim() {
@@ -914,6 +930,21 @@ onMounted(() => {
                 class="mobile-overflow-menu__item-hint"
                 aria-hidden="true"
               >Becomes track {{ moveDownBecomesTrack }}</span>
+            </button>
+            <button
+              v-if="menuTrack && canFindIcons"
+              type="button"
+              class="mobile-overflow-menu__item"
+              role="menuitem"
+              :disabled="tracksLocked || findingIcons"
+              @click="onMenuFindIcon"
+            >
+              <MaruEmoji
+                name="MagnifyingGlass"
+                size="md"
+                class="mobile-overflow-menu__item-emoji"
+              />
+              <span class="mobile-overflow-menu__item-label">Find icon</span>
             </button>
             <button
               v-if="menuTrack && canTrimTrack(menuTrack) && !menuTrack.split"
