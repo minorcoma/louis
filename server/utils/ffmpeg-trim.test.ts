@@ -25,3 +25,14 @@ describe('trimAacArgs', () => {
     assert.equal(args[args.length - 1], '/out.m4a')
   })
 })
+
+describe('trimAacArgs keeps audio only', () => {
+  it('drops embedded cover art, text tracks, and chapters (M4B)', () => {
+    const args = trimAacArgs('/in.m4b', '/out.m4a', 5, 65)
+    const at = args.indexOf('-map')
+    assert.equal(args[at + 1], '0:a:0')
+    for (const flag of ['-vn', '-sn', '-dn']) assert.ok(args.includes(flag), flag)
+    assert.equal(args[args.indexOf('-map_chapters') + 1], '-1')
+    assert.ok(at < args.indexOf('/out.m4a'), 'output options come before the output path')
+  })
+})

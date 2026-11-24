@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import { ffmpegTimeoutMs } from './ffmpeg-split.ts'
 import { isFullFileTrim } from '../../shared/myo-editor/trackTrim.ts'
 import { currentAudioBitrate } from './save-audio-settings.ts'
+import { AUDIO_ONLY_OUTPUT_ARGS } from './ffmpeg-audio-only.ts'
 
 const execFileAsync = promisify(execFile)
 const AAC_SAMPLE_RATE = '44100'
@@ -31,6 +32,7 @@ export function trimAacArgs(
     '-i', sourcePath,
     '-ss', String(startSeconds),
     '-to', String(endSeconds),
+    ...AUDIO_ONLY_OUTPUT_ARGS,
     '-c:a', 'aac',
     '-b:a', currentAudioBitrate(),
     '-ar', AAC_SAMPLE_RATE,

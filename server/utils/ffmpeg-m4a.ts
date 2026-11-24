@@ -4,6 +4,7 @@ import path from 'node:path'
 import { promisify } from 'node:util'
 import { ffmpegTimeoutMs } from './ffmpeg-split.ts'
 import { currentAudioBitrate } from './save-audio-settings.ts'
+import { AUDIO_ONLY_OUTPUT_ARGS } from './ffmpeg-audio-only.ts'
 
 const execFileAsync = promisify(execFile)
 const AAC_SAMPLE_RATE = '44100'
@@ -25,6 +26,7 @@ export function previewToSaveM4aArgs(
     '-nostats',
     '-y',
     '-i', sourcePath,
+    ...AUDIO_ONLY_OUTPUT_ARGS,
     '-c:a', 'aac',
     '-b:a', bitrate,
     '-ar', AAC_SAMPLE_RATE,

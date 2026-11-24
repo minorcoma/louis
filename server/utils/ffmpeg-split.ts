@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { currentAudioBitrate } from './save-audio-settings.ts'
+import { AUDIO_ONLY_OUTPUT_ARGS } from './ffmpeg-audio-only.ts'
 
 const execFileAsync = promisify(execFile)
 const AAC_SAMPLE_RATE = '44100'
@@ -82,6 +83,7 @@ function aacSplitArgs(
     '-ss', String(start),
     '-i', sourcePath,
     '-t', String(duration),
+    ...AUDIO_ONLY_OUTPUT_ARGS,
     '-c:a', 'aac',
     '-b:a', currentAudioBitrate(),
     '-ar', AAC_SAMPLE_RATE,
@@ -113,6 +115,7 @@ export async function splitAudioFile(options: {
       '-i', options.sourcePath,
       '-ss', String(start),
       '-t', String(duration),
+      ...AUDIO_ONLY_OUTPUT_ARGS,
       '-c', 'copy',
       '-avoid_negative_ts', 'make_zero',
       options.destPath,

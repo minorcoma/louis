@@ -24,6 +24,7 @@ How we cut releases: [docs/RELEASE.md](docs/RELEASE.md).
 - **Settings → General → Audio quality** (default Standard, 96 kbps). Saves are re-encoded at that bitrate instead of copying YouTube’s file, which was landing over 100 MB and getting rejected. High is the old 192 kbps setting.
 
 ### Fixed
+- An M4B (or MP3) with embedded cover art no longer fails to save with “Could not prepare … for Yoto”. ffmpeg also picked up the cover picture (trying to encode it as H.264), the chapter text track, and chapter markers, which the .m4a muxer refuses. Every cut, trim, transcode, and normalize now keeps only the first audio stream.
 - Find icons now gives far more tracks an icon: plurals match (dragons → dragon), numbers like “#26” are ignored, every track gets its own community search (was 6 words per playlist), title matches are assigned before card-name fallbacks, and icons are reused once unused matches run out. Tracks with no match are named.
 - Cover crops fill the 638×1011 frame instead of adding black bars, and a crop too big as PNG is re-encoded as JPEG instead of failing with “Cropped image is too large”.
 - Cover search uses the playlist name as-is. Adding “cover” returned cover-song singles (“Frozen cover”) or nothing (“Gruffalo cover”).
